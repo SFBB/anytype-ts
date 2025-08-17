@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { I, C, S, U, J, Preview, analytics, Storage, sidebar, keyboard, translate } from 'Lib';
+import { I, C, S, U, J, Preview, analytics, Storage, sidebar, keyboard, translate, focus } from 'Lib';
 
 interface RouteParam {
 	page: string; 
@@ -82,6 +82,7 @@ class UtilRouter {
 				route = route.concat([ it.key, it.value ]);
 			});
 		};
+
 		return route.join('/');
 	};
 
@@ -109,6 +110,7 @@ class UtilRouter {
 		S.Menu.closeAll();
 		S.Popup.closeAll();
 		sidebar.rightPanelToggle(false, keyboard.isPopup());
+		focus.clear(true);
 
 		if (routeParam.spaceId && ![ space ].includes(routeParam.spaceId)) {
 			this.switchSpace(routeParam.spaceId, route, false, param, false);
@@ -204,9 +206,9 @@ class UtilRouter {
 		this.isOpening = true;
 
 		C.WorkspaceOpen(id, (message: any) => {
-			this.isOpening = false;
-
 			if (message.error.code) {
+				this.isOpening = false;
+
 				if (!useFallback) {
 					S.Popup.open('confirm', {
 						data: {
@@ -238,7 +240,9 @@ class UtilRouter {
 					Storage.set('spaceId', id);
 
 					U.Data.onInfo(message.info);
-					U.Data.onAuth({ route, routeParam: { ...routeParam, animate: false } });
+					U.Data.onAuth({ route, routeParam: { ...routeParam, animate: false } }, () => {
+						this.isOpening = false;
+					});
 				},
 			});
 		});

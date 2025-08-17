@@ -1,14 +1,15 @@
 import * as React from 'react';
 import { observer } from 'mobx-react';
-import { Title, ListObjectManager, Label, Button, ProgressBar } from 'Component';
-import { I, J, translate, Action, analytics, U, S } from 'Lib';
+import { Title, ListObjectManager, Label, Button, ProgressBar, UpsellStorage } from 'Component';
+import { I, J, U, S, translate, Action, analytics } from 'Lib';
 
-const STORAGE_FULL = 0.7;
-
-const PageMainSettingsStorageManager = observer(class PageMainSettingsStorageManager extends React.Component<I.PageSettingsComponent, {}> {
+const PageMainSettingsStorage = observer(class PageMainSettingsStorage extends React.Component<I.PageSettingsComponent, {}> {
 
 	node = null;
-	refManager = null;
+	refManagers = {
+		synced: null,
+		notSynced: null,
+	};
 
 	constructor (props: I.PageSettingsComponent) {
 		super(props);
@@ -20,94 +21,152 @@ const PageMainSettingsStorageManager = observer(class PageMainSettingsStorageMan
 	render () {
 		const { spaceStorage } = S.Common;
 		const { localUsage, bytesLimit } = spaceStorage;
+		const { notSyncedCounter } = S.Auth.getSyncStatus();
 		const spaces = U.Space.getList();
-		const usageCn = [ 'item' ];
+		const currentSpace = U.Space.getSpaceview();
+		const usageCn = [ 'item', 'usageWrapper' ];
 		const canWrite = U.Space.canMyParticipantWrite();
+
+		const segments: any = {
+			current: { name: currentSpace.name, usage: 0, className: 'current', },
+			other: { name: translate('popupSettingsSpaceStorageProgressBarOther'), usage: 0, className: 'other', },
+		};
 
 		let bytesUsed = 0;
 		let buttonUpgrade = null;
+		let label = U.Common.sprintf(translate(`popupSettingsSpaceIndexStorageText`), U.File.size(bytesLimit));
 
-		const progressSegments = (spaces || []).map(space => {
+		(spaces || []).forEach((space) => {
 			const object: any = S.Common.spaceStorage.spaces.find(it => it.spaceId == space.targetSpaceId) || {};
 			const usage = Number(object.bytesUsage) || 0;
 			const isOwner = U.Space.isMyOwner(space.targetSpaceId);
+			const isCurrent = space.targetSpaceId == currentSpace.targetSpaceId;
 
 			if (!isOwner) {
-				return null;
+				return;
 			};
 
 			bytesUsed += usage;
-			return { name: space.name, caption: U.File.size(usage), percent: usage / bytesLimit, isActive: space.isActive };
-		}).filter(it => it);
-		const isRed = (bytesUsed / bytesLimit >= STORAGE_FULL) || (localUsage > bytesLimit);
+			if (isCurrent) {
+				segments.current.usage = usage;
+			} else {
+				segments.other.usage += usage;
+			};
+		});
+
+		const chunks: any[] = Object.values(segments);
+		const progressSegments = (chunks || []).map(chunk => {
+			const { name, usage, className } = chunk;
+
+			return { name, className, caption: U.File.size(usage), percent: usage / bytesLimit, isActive: true, };
+		});
+
+		const usagePercent = bytesUsed / bytesLimit;
+		const isRed = usagePercent >= 100;
+		const legend = chunks.concat([ { name: translate('popupSettingsSpaceStorageProgressBarFree'), usage: bytesLimit - bytesUsed, className: 'free' } ]);
 
 		if (isRed) {
 			usageCn.push('red');
-			buttonUpgrade = <Button className="payment" text={translate('popupSettingsSpaceIndexRemoteStorageUpgrade')} onClick={this.onUpgrade} />;
+			buttonUpgrade = <Button className="payment" text={translate('commonUpgrade')} onClick={() => this.onUpgrade()} />;
+			label = translate('popupSettingsSpaceIndexStorageIsFullText');
 		};
 
-		const buttons: I.ButtonComponent[] = [
-			{ icon: 'remove', text: translate('commonDeleteImmediately'), onClick: this.onRemove }
-		];
-		const filters: I.Filter[] = [
-			{ relationKey: 'fileSyncStatus', condition: I.FilterCondition.Equal, value: I.FileSyncStatus.Synced },
-		];
-		const sorts: I.Sort[] = [
-			{ type: I.SortType.Desc, relationKey: 'sizeInBytes' },
-		];
+		const Manager = (item: any) => {
+			const { refId } = item;
+			const buttons: I.ButtonComponent[] = [
+				{ icon: 'remove', text: translate('commonDeleteImmediately'), onClick: () => this.onRemove(refId) }
+			];
+			const filters: I.Filter[] = [
+				{ relationKey: 'syncStatus', condition: I.FilterCondition.In, value: item.filters },
+				{ relationKey: 'layout', condition: I.FilterCondition.In, value: U.Object.getFileLayouts() },
+			];
+			const sorts: I.Sort[] = [
+				{ type: I.SortType.Desc, relationKey: 'sizeInBytes' },
+			];
+
+			return (
+				<div className="fileManagerWrapper">
+					<Title className="sub" text={item.title} />
+
+					<ListObjectManager
+						ref={ref => this.refManagers[refId] = ref}
+						subId={item.subId}
+						rowLength={2}
+						buttons={buttons}
+						info={I.ObjectManagerItemInfo.FileSize}
+						iconSize={18}
+						sorts={sorts}
+						filters={filters}
+						keys={U.Subscription.syncStatusRelationKeys()}
+						ignoreHidden={false}
+						ignoreArchived={false}
+						textEmpty={translate('popupSettingsSpaceStorageEmptyLabel')}
+					/>
+				</div>
+			);
+		};
 
 		return (
 			<div ref={ref => this.node = ref} className="wrap">
 				{buttonUpgrade}
 
+				<UpsellStorage route={analytics.route.settingsStorage} />
+
 				<Title text={translate(`pageSettingsSpaceRemoteStorage`)} />
-				<Label text={U.Common.sprintf(translate(`popupSettingsSpaceIndexStorageText`), U.File.size(bytesLimit))} />
+				<Label text={label} />
 
 				<div className={usageCn.join(' ')}>
-					<ProgressBar segments={progressSegments} current={U.File.size(bytesUsed)} max={U.File.size(bytesLimit)} />
+					<ProgressBar segments={progressSegments} />
+
+					<div className="info">
+						<div className="totalUsage">
+							<span>{U.File.size(bytesUsed, true)} </span>
+							{U.Common.sprintf(translate('popupSettingsSpaceStorageProgressBarUsageLabel'), U.File.size(bytesLimit, true))}
+						</div>
+
+						<div className="legend">
+							{legend.map((item, idx) => (
+								<div key={idx} className={[ 'item', item.className ].join(' ')}>{item.name}</div>
+							))}
+						</div>
+					</div>
 				</div>
 
-				{canWrite ? (
-					<div className="fileManagerWrapper">
-						<Title className="sub" text={translate('pageSettingsSpaceCleanupSpaceFiles')} />
+				{notSyncedCounter && canWrite ? (
+					<Manager
+						refId={'notSynced'}
+						subId={J.Constant.subId.fileManagerNotSynced}
+						title={translate('pageSettingsSpaceNotSyncedFiles')}
+						filters={[ I.SyncStatusObject.Error ]}
+					/>
+				) : ''}
 
-						<ListObjectManager
-							ref={ref => this.refManager = ref}
-							subId={J.Constant.subId.fileManager}
-							rowLength={2}
-							buttons={buttons}
-							info={I.ObjectManagerItemInfo.FileSize}
-							iconSize={18}
-							sorts={sorts}
-							filters={filters}
-							ignoreHidden={false}
-							ignoreArchived={false}
-							textEmpty={translate('popupSettingsSpaceStorageManagerEmptyLabel')}
-						/>
-					</div>
+				{canWrite ? (
+					<Manager
+						refId={'synced'}
+						subId={J.Constant.subId.fileManagerSynced}
+						title={translate('pageSettingsSpaceSyncedFiles')}
+						filters={[ I.SyncStatusObject.Synced ]}
+					/>
 				) : ''}
 			</div>
 		);
 	};
 
-	componentDidMount () {
-		analytics.event('ScreenSettingsSpaceStorageManager');
+	componentWillUnmount () {
+		U.Subscription.destroyList([ J.Constant.subId.fileManagerSynced, J.Constant.subId.fileManagerNotSynced ]);
 	};
 
-	onUpgrade () {
-		const { membership } = S.Auth;
+	onUpgrade (id?: I.TierType) {
+		Action.membershipUpgrade(id);
 
-		if (membership.tier >= I.TierType.CoCreator) {
-			Action.membershipUpgrade();
-		} else {
-			this.props.onPage('membership');
-		};
-
-		analytics.event('ClickUpgradePlanTooltip', { type: 'storage', route: analytics.route.settingsSpaceIndex });
+		analytics.event('ClickUpgradePlanTooltip', { type: `Storage100`, route: analytics.route.settingsStorage });
 	};
 
-	onRemove () {
-		Action.delete(this.refManager.getSelected(), analytics.route.settings, () => this.refManager?.selectionClear());
+	onRemove (refId: string) {
+		const ref = this.refManagers[refId];
+
+		Action.delete(ref.getSelected(), analytics.route.settings, () => ref?.selectionClear());
 	};
 
 	resize () {
@@ -121,4 +180,4 @@ const PageMainSettingsStorageManager = observer(class PageMainSettingsStorageMan
 
 });
 
-export default PageMainSettingsStorageManager;
+export default PageMainSettingsStorage;

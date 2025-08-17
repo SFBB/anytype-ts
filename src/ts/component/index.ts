@@ -32,6 +32,7 @@ import Menu from './menu';
 import MenuItemVertical from './menu/item/vertical';
 
 import Notification from './notification';
+import Banner from './util/banner';
 
 import Popup from './popup';
 import Frame from './util/frame';
@@ -44,6 +45,7 @@ import Deleted from './util/deleted';
 import Progress from './util/progress';
 import DotIndicator from './util/dotIndicator';
 import EmptySearch from './util/emptySearch';
+import EmptyState from './util/emptyState';
 
 import Input from './form/input';
 import InputWithFile from './form/inputWithFile';
@@ -60,7 +62,6 @@ import Pin from './form/pin';
 import Filter from './form/filter';
 import Phrase from './form/phrase';
 import TabSwitch from './form/tabSwitch';
-import EmailCollection from './form/emailCollection';
 import HeadSimple from './page/elements/head/simple';
 import EditorControls from './page/elements/head/controls';
 
@@ -99,8 +100,9 @@ import ShareTooltip from './util/share/tooltip';
 import ShareBanner from './util/share/banner';
 import FooterAuthDisclaimer from './footer/auth/disclaimer';
 
-import Floater from './util/floater';
 import QR from './util/qr';
+
+import UpsellStorage from './util/upsell/storage';
 
 export {
 	Page,
@@ -154,6 +156,7 @@ export {
 	TabSwitch,
 
 	EmptySearch,
+	EmptyState,
 	Popup,
 	Frame,
 	Cover,
@@ -161,6 +164,7 @@ export {
 	Label,
 	Error,
 	Notification,
+	Banner,
 
 	Icon,
 	IconObject,
@@ -198,10 +202,10 @@ export {
 	ShareBanner,
 	FooterAuthDisclaimer,
 
-	EmailCollection,
-	Floater,
 	HeadSimple,
 	EditorControls,
 
 	QR,
+
+	UpsellStorage,
 };

@@ -153,6 +153,7 @@ class Keyboard {
 		const selection = S.Common.getRef('selectionProvider');
 		const rootId = this.getRootId();
 		const object = S.Detail.get(rootId, rootId);
+		const space = U.Space.getSpaceview();
 
 		this.shortcut('toggleSidebar', e, () => {
 			e.preventDefault();
@@ -309,10 +310,13 @@ class Keyboard {
 			// Copy page link
 			this.shortcut('copyPageLink', e, () => {
 				e.preventDefault();
-
-				const space = U.Space.getSpaceview();
-
 				U.Object.copyLink(object, space, 'web', analytics.route.shortcut);
+			});
+
+			// Copy deep link
+			this.shortcut('copyDeepLink', e, () => {
+				e.preventDefault();
+				U.Object.copyLink(object, space, 'deeplink', analytics.route.shortcut);
 			});
 
 			// Settings
@@ -459,8 +463,14 @@ class Keyboard {
 					return;
 				};
 
+				if ((route.page == 'main') && (route.action != 'settings') && (current.page == 'main') && (current.action == 'settings')) {
+					const state = sidebar.leftPanelGetState();
+					if (![ 'object', 'widget' ].includes(state.page)) {
+						sidebar.leftPanelSetState({ page: 'widget' });
+					};
+				};
+
 				if ((current.page == 'main') && (current.action == 'settings') && ([ 'index', 'account', 'spaceIndex', 'spaceShare' ].includes(current.id))) {
-					sidebar.leftPanelSetState({ page: 'widget' });
 					U.Space.openDashboard();
 				} else {
 					history.goBack();
@@ -857,7 +867,7 @@ class Keyboard {
 	/**
 	 * Handles membership upgrade action.
 	 */
-	onMembershipUpgrade () {
+	onMembershipUpgradeViaEmail () {
 		const { account, membership } = S.Auth;
 		const name = membership.name ? membership.name : account.id;
 
@@ -1075,10 +1085,14 @@ class Keyboard {
 	 * @param {string} route - The route context.
 	 */
 	onSearchPopup (route: string) {
-		S.Popup.open('search', {
-			preventCloseByEscape: true,
-			data: { isPopup: this.isPopup(), route },
-		});
+		if (S.Popup.isOpen('search')) {
+			S.Popup.close('search');
+		} else {
+			S.Popup.open('search', {
+				preventCloseByEscape: true,
+				data: { isPopup: this.isPopup(), route },
+			});
+		};
 	};
 
 	/**
@@ -1527,7 +1541,7 @@ class Keyboard {
 
 	/**
 	 * Gets the mark parameter for the current selection.
-	 * @returns {any} The mark parameter.
+	 * @returns {{ key: string; type: I.MarkType; param: string; }[]} The mark parameter.
 	 */
 	getMarkParam () {
 		return [
@@ -1537,8 +1551,8 @@ class Keyboard {
 			{ key: 'textStrike',	 type: I.MarkType.Strike,	 param: '' },
 			{ key: 'textLink',		 type: I.MarkType.Link,		 param: '' },
 			{ key: 'textCode',		 type: I.MarkType.Code,		 param: '' },
-			{ key: 'textColor',		 type: I.MarkType.Color,	 param: Storage.get('color') },
-			{ key: 'textBackground', type: I.MarkType.BgColor,	 param: Storage.get('bgColor') },
+			{ key: 'textColor',		 type: I.MarkType.Color,	 param: '' },
+			{ key: 'textBackground', type: I.MarkType.BgColor,	 param: '' },
 		];
 	};
 	

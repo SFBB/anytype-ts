@@ -27,7 +27,6 @@ import PageMainImport from './main/import';
 import PageMainInvite from './main/invite';
 import PageMainMembership from './main/membership';
 import PageMainObject from './main/object';
-import PageMainOnboarding from './main/onboarding';
 import PageMainChat from './main/chat';
 import PageMainDate from './main/date';
 import PageMainSettings from './main/settings';
@@ -56,7 +55,6 @@ const Components = {
 	'main/invite':			 PageMainInvite,
 	'main/membership':		 PageMainMembership,
 	'main/object':			 PageMainObject,
-	'main/onboarding':		 PageMainOnboarding,
 	'main/chat':			 PageMainChat,
 	'main/void':			 PageMainVoid,
 	'main/date':			 PageMainDate,
@@ -265,16 +263,7 @@ const Page = observer(class Page extends React.Component<I.PageComponent> {
 	};
 
 	event () {
-		const { page, action, id } = this.getMatchParams();
-		const params = { page, action, id: undefined };
-		const isMainType = this.isMainType();
-		const isMainRelation = this.isMainRelation();
-
-		if (isMainType || isMainRelation) {
-			params.id = id;
-		};
-
-		analytics.event('page', { params });
+		analytics.event('page', { params: this.getMatchParams() });
 	};
 
 	isIndex () {

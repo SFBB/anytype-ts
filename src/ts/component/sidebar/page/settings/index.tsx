@@ -99,6 +99,10 @@ const SidebarSettingsIndex = observer(class SidebarSettingsIndex extends React.C
 				};
 			};
 
+			if (item.alert) {
+				caption = <div className="caption alert">{item.alert}</div>;
+			};
+
 			return (
 				<div
 					id={`item-${item.id}`}
@@ -184,6 +188,14 @@ const SidebarSettingsIndex = observer(class SidebarSettingsIndex extends React.C
 	};
 
 	componentDidMount () {
+		this.setCache();
+	};
+
+	componentDidUpdate () {
+		this.setCache();
+	};
+
+	setCache () {
 		const items = this.getItems();
 
 		this.cache = new CellMeasurerCache({
@@ -198,6 +210,7 @@ const SidebarSettingsIndex = observer(class SidebarSettingsIndex extends React.C
 	};
 
 	getSpaceSettings () {
+		const { error, notSyncedCounter } = S.Auth.getSyncStatus();
 		const space = U.Space.getSpaceview();
 		const isEntrySpace = space.spaceAccessType == I.SpaceType.Personal;
 		const canWrite = U.Space.canMyParticipantWrite();
@@ -220,7 +233,7 @@ const SidebarSettingsIndex = observer(class SidebarSettingsIndex extends React.C
 				children: [
 					{ id: 'spaceIndex', icon: 'space', name: translate('pageSettingsSpaceGeneral') },
 					isEntrySpace ? null : { id: 'spaceShare', icon: 'members', name: members.length > 1 ? translate('commonMembers') : translate('pageSettingsSpaceIndexInviteMembers') },
-					{ id: 'spaceStorageManager', icon: 'storage', name: translate('pageSettingsSpaceRemoteStorage') },
+					{ id: 'spaceStorage', icon: 'storage', name: translate('pageSettingsSpaceRemoteStorage'), alert: notSyncedCounter },
 					{ id: 'archive', icon: 'bin', name: translate('commonBin') },
 				].filter(it => it),
 			},
@@ -234,17 +247,6 @@ const SidebarSettingsIndex = observer(class SidebarSettingsIndex extends React.C
 	};
 
 	getAppSettings () {
-		const settingsVault = [
-			{ id: 'spaceList', name: translate('popupSettingsSpacesListTitle'), icon: 'spaces' },
-			{ id: 'dataIndex', name: translate('popupSettingsDataManagementTitle'), icon: 'storage', subPages: [ 'dataPublish', 'delete' ] },
-			{ id: 'phrase', name: translate('popupSettingsPhraseTitle') },
-			{ id: 'api', name: translate('popupSettingsApiTitle') },
-		];
-
-		if (this.withMembership()) {
-			settingsVault.push({ id: 'membership', icon: 'membership', name: translate('popupSettingsMembershipTitle1') });
-		};
-
 		return [
 			{ id: 'account', children: [ { id: 'account', name: translate('popupSettingsProfileTitle') } ] },
 			{
@@ -254,7 +256,20 @@ const SidebarSettingsIndex = observer(class SidebarSettingsIndex extends React.C
 					{ id: 'pinIndex', name: translate('popupSettingsPinTitle'), icon: 'pin', subPages: [ 'pinSelect', 'pinConfirm' ] },
 				]
 			},
-			{ id: 'vaultSettings', name: translate('popupSettingsAccountAndKeyTitle'), children: settingsVault }
+			{
+				id: 'vaultSettings', name: translate('popupSettingsAccountAndKeyTitle'), children: [
+					{ id: 'phrase', name: translate('popupSettingsPhraseTitle'), subPages: [ 'delete' ] },
+					this.withMembership() ? { id: 'membership', icon: 'membership', name: translate('popupSettingsMembershipTitle1') } : null
+				].filter(it => it),
+			},
+			{
+				id: 'dataManagement', name: translate('popupSettingsDataManagementTitle'), children: [
+					{ id: 'dataIndex', name: translate('popupSettingsLocalStorageTitle'), icon: 'storage' },
+					{ id: 'spaceList', name: translate('popupSettingsSpacesListTitle'), icon: 'spaces' },
+					{ id: 'dataPublish', name: translate('popupSettingsDataManagementDataPublishTitle'), icon: 'sites' },
+					{ id: 'api', name: translate('popupSettingsApiTitle'), icon: 'api'  },
+				]
+			}
 		];
 	};
 

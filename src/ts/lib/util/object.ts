@@ -591,22 +591,18 @@ class UtilObject {
 		};
 
 		if (object.layout != type.recommendedLayout) {
-			console.log('[hasLayoutConflict] layout', object.layout, type.recommendedLayout);
 			return true;
 		};
 
 		if (!this.hasEqualLayoutAlign(object, type)) {
-			console.log('[hasLayoutConflict] layoutAlign', object.layoutAlign, type.layoutAlign);
 			return true;
 		};
 
 		if (!this.hasEqualLayoutWidth(object, type)) {
-			console.log('[hasLayoutConflict] layoutWidth', type.layoutWidth);
 			return true;
 		};
 
 		if (!this.hasEqualFeaturedRelations(object, type)) {
-			console.log('[hasLayoutConflict] featuredRelations');
 			return true;
 		};
 
@@ -705,6 +701,10 @@ class UtilObject {
 	};
 
 	copyLink (object: any, space: any, type: string, route: string, add?: string) {
+		if (!object || !space) {
+			return;
+		};
+
 		add = add || '';
 
 		const cb = (link: string) => {
