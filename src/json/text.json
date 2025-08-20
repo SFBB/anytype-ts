@@ -1311,8 +1311,6 @@
 
 	"popupShortcutDescription": "Click any shortcut to edit it",
 	"popupShortcutKeyboard": "Keyboard Shortcuts",
-	"popupShortcutResetKey": "Conflicts with %s. It has been set to blank.",
-	"popupShortcutConflict": "Conflicts with %s",
 	"popupShortcutImport": "Import Shortcuts Mapping",
 	"popupShortcutExport": "Export Shortcuts Mapping",
 	"popupShortcutResetAll": "Reset All To Default",
@@ -1325,6 +1323,9 @@
 	"popupShortcutToastUpdated": "Shortcuts mapping updated",
 	"popupShortcutToastExported": "Shortcuts mapping exported",
 	"popupShortcutToastSaved": "Shortcut assigned",
+
+	"popupShortcutConflict": "<b>%s</b> is already assigned to \"<b>%s</b>\"",
+	"popupShortcutOverride": "Override",
 
 	"popupShortcutBasics": "Basics",
 	"popupShortcutInterface": "Interface",
@@ -2017,6 +2018,7 @@
 	"widgetEmptyFavoriteLabel": "Pin objects here using the icon in the top right.",
 	"widgetShowAll": "See all Objects",
 	"widgetItemClipboard": "Create from clipboard",
+	"widgetSeeAll": "See All",
 
 	"phrasePlaceholder": "Please enter your Key",
 
