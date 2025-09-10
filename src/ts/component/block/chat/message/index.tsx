@@ -8,7 +8,7 @@ import Attachment from '../attachment';
 import Reply from './reply';
 import Reaction from './reaction';
 
-const LINES_LIMIT = 10;
+const LINES_LIMIT = 16;
 
 interface ChatMessageRefProps {
 	highlight: () => void;
@@ -19,7 +19,7 @@ interface ChatMessageRefProps {
 const ChatMessageBase = observer(forwardRef<ChatMessageRefProps, I.ChatMessageComponent>((props, ref) => {
 
 	const { 
-		rootId, id, isNew, readonly, subId, hasMore, isPopup, style, scrollToBottom, onContextMenu, onMore, onReplyEdit,
+		rootId, id, isNew, readonly, subId, hasMore, isPopup, style, onContextMenu, onMore, onReplyEdit,
 		renderLinks, renderMentions, renderObjects, renderEmoji,
 	} = props;
 	const { space } = S.Common;
@@ -28,7 +28,7 @@ const ChatMessageBase = observer(forwardRef<ChatMessageRefProps, I.ChatMessageCo
 	const textRef = useRef(null);
 	const attachmentRefs = useRef({});
 	const [ isExpanded, setIsExpanded ] = useState(false);
-	const message = S.Chat.getMessage(subId, id);
+	const message = S.Chat.getMessageById(subId, id);
 
 	useEffect(() => {
 		init();
@@ -79,19 +79,18 @@ const ChatMessageBase = observer(forwardRef<ChatMessageRefProps, I.ChatMessageCo
 		const lineHeight = parseInt(ref.css('line-height'));
 		const canExpand = textHeight / lineHeight > LINES_LIMIT;
 
-		if (canExpand) {
-			node.addClass('canExpand');
-		};
+		node.toggleClass('canExpand', canExpand);
 	};
 
 	const onReactionAdd = () => {
 		const node = $(nodeRef.current);
-		const container = isPopup ? U.Common.getScrollContainer(isPopup) : $('body');
+		const container = U.Common.getScrollContainer(isPopup);
 
 		let menuContext = null;
 
 		S.Menu.open('smile', { 
 			element: node.find('#reaction-add'),
+			classNameWrap: 'fromBlock',
 			horizontal: I.MenuDirection.Center,
 			noFlipX: true,
 			onOpen: context => {
@@ -156,7 +155,7 @@ const ChatMessageBase = observer(forwardRef<ChatMessageRefProps, I.ChatMessageCo
 	};
 
 	const update = (param: Partial<I.ChatMessage>) => {
-		const message = Object.assign(S.Chat.getMessage(subId, id), param);
+		const message = Object.assign(S.Chat.getMessageById(subId, id), param);
 
 		C.ChatEditMessageContent(rootId, id, message);
 	};
@@ -189,7 +188,7 @@ const ChatMessageBase = observer(forwardRef<ChatMessageRefProps, I.ChatMessageCo
 	};
 
 	const canAddReaction = (): boolean => {
-		const message = S.Chat.getMessage(subId, id);
+		const message = S.Chat.getMessageById(subId, id);
 		const reactions = message.reactions || [];
 		const { self, all } = J.Constant.limit.chat.reactions;
 

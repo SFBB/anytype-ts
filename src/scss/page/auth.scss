@@ -53,6 +53,7 @@ html.bodyAuthDeleted {
 	.button { min-width: 224px; @include text-common; font-weight: 400; }
 	.button.disabled { color: var(--color-text-tertiary) !important; background-color: var(--color-control-inactive) !important; }
 	.button.c48 { border-radius: 24px; }
+	.button.accent { font-weight: 500; }
 	.button.blank { border: 0px; background: var(--color-shape-highlight-medium); }
 	.button.blank:not(.disabled):hover,
 	.button.blank:not(.disabled).hover { background: var(--color-shape-highlight-dark) !important; }
@@ -121,7 +122,6 @@ html.bodyAuthDeleted {
 	.icon { height: 20px; width: 20px; }
 	.error { position: absolute; z-index: 1; width: 100%; left: 0px; top: 0px; transform: translateY(calc(-100% - 16px)); }
 
-	.title { margin: 0px 0px 20px 0px; }
 	.phraseWrapper { margin: 0px 0px 40px 0px; background-color: var(--color-shape-tertiary); }
 }
 
@@ -164,6 +164,8 @@ html.bodyAuthDeleted {
 
 .pageAuthOnboard, .pageAuthLogin {
 	.frame { width: 1064px; }
+	.title { margin: 0px 0px 8px 0px; }
+	.label.description { margin: 0px 0px 32px 0px; }
 
 	@media (max-width: 1160px) {
 		.frame { width: calc(100% - 96px); }
@@ -171,9 +173,7 @@ html.bodyAuthDeleted {
 }
 
 .pageAuthOnboard {
-	.title { margin: 0px 0px 8px 0px; }
-	.label.description { width: 508px; margin: 0px 0px 32px 0px; }
-
+	.label.description { width: 508px; }
 	.buttons { flex-direction: column; gap: 12px 0px; }
 
 	.tooltipLink:hover { text-decoration: underline; }
@@ -199,6 +199,13 @@ html.bodyAuthDeleted {
 			background: var(--color-system-accent-100) url('~img/icon/onboarding/tick.svg') 50% 50% no-repeat;
 		}
 
+		.option {
+			.label { color: var(--color-text-secondary); @include text-common; }
+		}
+		.option.selected {
+			.label { color: var(--color-text-primary) !important; }
+		}
+
 		.icon { width: 32px; height: 32px; background-size: 32px; }
 		.icon.student { background-image: url('~img/icon/onboarding/options/student.png'); }
 		.icon.manager { background-image: url('~img/icon/onboarding/options/manager.png'); }
@@ -218,8 +225,6 @@ html.bodyAuthDeleted {
 		.icon.habitTracking { background-image: url('~img/icon/onboarding/options/tracking.png'); }
 		.icon.teamWork { background-image: url('~img/icon/onboarding/options/team.png'); }
 		.icon.other { background-image: url('~img/icon/onboarding/options/other.png'); }
-
-		.label { color: var(--color-text-secondary); @include text-common; }
 	}
 }
 

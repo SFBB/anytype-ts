@@ -8,7 +8,7 @@ import { Router, Route, Switch } from 'react-router-dom';
 import { Provider } from 'mobx-react';
 import { configure, spy } from 'mobx';
 import { enableLogging } from 'mobx-logger';
-import { Page, SelectionProvider, DragProvider, Progress, Toast, Preview as PreviewIndex, ListPopup, ListMenu, ListNotification, ListBanner, SidebarLeft } from 'Component';
+import { Page, SelectionProvider, DragProvider, Progress, Toast, Preview as PreviewIndex, ListPopup, ListMenu, ListNotification, Icon, SidebarLeft, MenuBar } from 'Component';
 import { I, C, S, U, J, M, keyboard, Storage, analytics, dispatcher, translate, Renderer, focus, Preview, Mark, Animation, Onboarding, Survey, Encode, Decode, sidebar, Action } from 'Lib';
 
 require('pdfjs-dist/build/pdf.worker.entry.js');
@@ -125,7 +125,6 @@ const App: FC = () => {
 
 	const [ isLoading, setIsLoading ] = useState(false);
 	const nodeRef = useRef(null);
-	const drag = U.Common.isPlatformMac() ? <div id="drag" /> : '';
 
 	const init = () => {
 		const { version, arch, getGlobal } = electron;
@@ -188,6 +187,10 @@ const App: FC = () => {
 
 		Renderer.on('reload', () => {
 			Renderer.send('reload', U.Router.getRoute());
+		});
+
+		Renderer.on('power-event', (e: any, state: string) => {
+			C.AppSetDeviceState(state == 'suspend' ? I.AppDeviceState.Background : I.AppDeviceState.Foreground);
 		});
 	};
 
@@ -480,7 +483,7 @@ const App: FC = () => {
 	return (
 		<Router history={history}>
 			<Provider {...S}>
-				<div ref={nodeRef}>
+				<div id="appContainer" ref={nodeRef}>
 					{isLoading ? (
 						<div id="root-loader" className="loaderWrapper">
 							<div className="inner">
@@ -490,7 +493,7 @@ const App: FC = () => {
 						</div>
 					) : ''}
 
-					{drag}
+					<MenuBar />
 					<div id="floaterContainer" />
 					<div id="tooltipContainer" />
 					<div id="globalFade" />
@@ -499,7 +502,6 @@ const App: FC = () => {
 					<Progress />
 					<Toast />
 					<ListNotification key="listNotification" />
-					<ListBanner />
 
 					<SelectionProvider ref={ref => S.Common.refSet('selectionProvider', ref)}>
 						<DragProvider ref={ref => S.Common.refSet('dragProvider', ref)}>

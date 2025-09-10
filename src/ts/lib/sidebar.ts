@@ -242,11 +242,10 @@ class Sidebar {
 		const isMain = keyboard.isMain();
 		const isMainVoid = keyboard.isMainVoid();
 		const isMainHistory = keyboard.isMainHistory();
-		const isMainChat = keyboard.isMainChat();
 
 		this.initObjects();
 
-		let leftButtonX = 16;
+		let leftButtonX = 12;
 		let rightButtonX = 52;
 
 		if ((widthLeft === null) && this.objLeft && this.objLeft.length) {
@@ -258,7 +257,6 @@ class Sidebar {
 		};
 
 		const { isFullScreen } = S.Common;
-		const { ww } = U.Common.getWindowDimensions();
 
 		if (isPopup) {
 			widthLeft = 0;
@@ -273,36 +271,35 @@ class Sidebar {
 		widthRight = Number(widthRight) || 0;
 
 		const container = U.Common.getScrollContainer(isPopup);
-		const pageWidth = (!isPopup ? ww : this.pageFlex.width()) - widthLeft - widthRight;
+		const pageWidth = this.pageFlex.width() - widthLeft - widthRight;
 		const ho = isMainHistory ? J.Size.history.panel : 0;
 		const hw = pageWidth - ho;
 
 		if (U.Common.isPlatformMac() && !isFullScreen) {
 			leftButtonX = 84;
 			rightButtonX = 120;
+		};
 
-			if (widthLeft) {
-				rightButtonX = widthLeft - 40;
-			};
+		if (widthLeft) {
+			rightButtonX = widthLeft - 40;
 		};
 
 		this.objRight.css({ height: container.height() });
-
 		this.header.css({ width: '' });
 		this.footer.css({ width: '' });
 
 		this.header.toggleClass('sidebarAnimation', animate);
 		this.footer.toggleClass('sidebarAnimation', animate);
 
-		if (isMainChat) {
-			this.page.toggleClass('sidebarAnimation', animate);
-		};
+		// this.page.toggleClass('sidebarAnimation', animate);
 
 		this.loader.css({ width: pageWidth, right: 0 });
 		this.header.css({ width: hw });
 		this.footer.css({ width: hw });
 		
 		if (!isPopup) {
+			const wh = U.Common.getAppContainerHeight();
+
 			this.dummyLeft.toggleClass('sidebarAnimation', animate);
 			this.leftButton.toggleClass('sidebarAnimation', animate);
 			this.rightButton.toggleClass('sidebarAnimation', animate);
@@ -310,7 +307,7 @@ class Sidebar {
 			this.rightButton.toggleClass('withSidebar', !!widthLeft);
 
 			this.dummyLeft.css({ width: widthLeft });
-			this.page.css({ width: pageWidth });
+			this.page.css({ width: pageWidth, height: wh });
 			this.leftButton.css({ left: leftButtonX });
 			this.rightButton.css({ left: rightButtonX });
 		};
@@ -507,6 +504,10 @@ class Sidebar {
 	 * @param {any} v - The state to set.
 	 */
 	rightPanelSetState (isPopup: boolean, v: any) {
+		if (!v.page) {
+			v.page = S.Common.getRightSidebarState(isPopup).page;
+		};
+
 		this.rightPanelRef(isPopup)?.setState(v);
 	};
 
