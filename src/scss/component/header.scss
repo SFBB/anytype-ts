@@ -70,6 +70,7 @@
 	.icon.unpin { background-image: url('~img/icon/header/unpin.svg'); }
 	.icon.widgetPanel { background-image: url('~img/icon/header/widget.svg'); }
 	.icon.share { background-image: url('~img/icon/header/share.svg'); }
+	.icon.invite { background-image: url('~img/icon/header/invite.svg'); }
 }
 .header.isSmall {
 	.path { visibility: hidden; overflow: hidden; width: 0px; }
@@ -111,7 +112,7 @@ body.isFullScreen {
 		&:before { content: ''; position: absolute; left: 6px; top: 4px; width: 18px; height: 18px; background: url('~img/icon/header/language.svg'); }
 	}
 
-	.logo { width: 70px; height: 18px; background: url('~img/logo/black.svg'); }
+	.logo { width: 70px; height: 18px; background: url('~img/icon/header/logo.svg'); }
 }
 
 html:not(.bodyIndexIndex):not(.bodyAuthSelect) {

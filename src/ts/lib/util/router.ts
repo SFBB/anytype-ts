@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { I, C, S, U, J, Preview, analytics, Storage, sidebar, keyboard, translate, focus } from 'Lib';
+import { I, C, S, U, J, Preview, analytics, Storage, sidebar, translate, focus } from 'Lib';
 
 interface RouteParam {
 	page: string; 
@@ -101,6 +101,8 @@ class UtilRouter {
 		const { replace, animate, delay, onFadeOut, onFadeIn, onRouteChange } = param;
 		const routeParam = this.getParam(route);
 		const { space } = S.Common;
+		const spaceview = U.Space.getSpaceview();
+		const rightSidebar = S.Common.getRightSidebarState(false);
 
 		let timeout = S.Menu.getTimeout();
 		if (!timeout) {
@@ -118,6 +120,8 @@ class UtilRouter {
 
 		const change = () => {
 			this.history.push(route); 
+			this.checkSidebarState();
+
 			if (onRouteChange) {
 				onRouteChange();
 			};
@@ -182,6 +186,8 @@ class UtilRouter {
 	 * @param {boolean} useFallback - Whether to use fallback on error.
 	 */
 	switchSpace (id: string, route: string, sendEvent: boolean, routeParam: any, useFallback: boolean) {
+		routeParam = routeParam || {};
+
 		if (this.isOpening) {
 			return;
 		};
@@ -193,7 +199,6 @@ class UtilRouter {
 
 		S.Menu.closeAllForced();
 		S.Progress.showSet(false);
-		//S.Common.setRightSidebarState(false, '', false);
 
 		if (sendEvent) {
 			const counters = S.Chat.getSpaceCounters(id);
@@ -231,22 +236,42 @@ class UtilRouter {
 
 			this.go('/main/blank', { 
 				replace: true, 
-				animate: routeParam.animate,
-				delay: 100,
+				animate: false,
+				delay: 0,
 				onRouteChange: () => {
 					Storage.set('spaceId', id);
 
 					analytics.removeContext();
 					S.Common.nullifySpaceKeys();
 
-					U.Data.onInfo(message.info);
-					U.Data.onAuth({ route, routeParam: { ...routeParam, animate: false } }, () => {
-						this.isOpening = false;
+					const onRouteChange = () => {
 						sidebar.leftPanelSetState({ page: U.Space.getDefaultSidebarPage() });
+
+						this.checkSidebarState();
+						routeParam.onRouteChange?.();
+					};
+
+					U.Data.onInfo(message.info);
+					U.Data.onAuth({ route, routeParam: { ...routeParam, onRouteChange, animate: false } }, () => {
+						this.isOpening = false;
 					});
 				},
 			});
 		});
+	};
+
+	checkSidebarState () {
+		const spaceview = U.Space.getSpaceview();
+		const rightSidebar = S.Common.getRightSidebarState(false);
+
+		if (!spaceview.isChat && (rightSidebar.page == 'widget')) {
+			sidebar.rightPanelClose(false);
+		} else 
+		if (spaceview.isChat && (rightSidebar.page != 'widget')) {
+			sidebar.rightPanelClose(false);
+		} else {
+			sidebar.rightPanelRestore(false);
+		};
 	};
 
 	/**

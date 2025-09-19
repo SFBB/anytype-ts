@@ -14,14 +14,15 @@ const HEIGHT_LIST = 64;
 
 const WidgetViewList = observer(forwardRef<{}, I.WidgetViewComponent>((props, ref) => {
 
-	const { parent, block, isPreview, subId, getRecordIds, addGroupLabels, getView } = props;
+	const { parent, block, isPreview, subId, getRecordIds, addGroupLabels, getView, getContentParam } = props;
+	const { layout } = getContentParam();
 	const cache = useRef({});
 	const nodeRef =	useRef(null);
 	const listRef = useRef(null);
 	const top = useRef(0);
 	const view = getView();
 	const { total } = S.Record.getMeta(subId, '');
-	const isCompact = [ I.WidgetLayout.Compact, I.WidgetLayout.View ].includes(parent.content.layout);
+	const isCompact = [ I.WidgetLayout.Compact, I.WidgetLayout.View ].includes(layout);
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -201,7 +202,7 @@ const WidgetViewList = observer(forwardRef<{}, I.WidgetViewComponent>((props, re
 											ref={listRef}
 											width={width}
 											height={height}
-											deferredMeasurmentCache={cache.current}
+											deferredMeasurementCache={cache.current}
 											rowCount={length}
 											rowHeight={({ index }) => getRowHeight(items[index], index, isCompact)}
 											rowRenderer={rowRenderer}

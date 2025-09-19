@@ -141,29 +141,13 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 			return;
 		};
 
-		const items: any[] = U.Menu.getVaultItems().filter(it => !it.isButton);
+		const items: any[] = U.Menu.getVaultItems();
 		const oldIndex = items.findIndex(it => it.id == active.id);
 		const newIndex = items.findIndex(it => it.id == over.id);
 		const newItems = arrayMove(items, oldIndex, newIndex).filter(it => it.isPinned);
 
-		let s = '';
-		newItems.forEach((it, i) => {
-			s = U.Common.lexString(s);
-			S.Detail.update(J.Constant.subId.space, { id: it.id, details: { tmpOrder: s }}, false);
-		});
-
-		C.SpaceSetOrder(active.id, newItems.map(it => it.id), (message: any) => {
-			if (message.error.code) {
-				return;
-			};
-
-			const list = message.list;
-			for (let i = 0; i < list.length; i++) {
-				const item = items[i];
-				if (item) {
-					S.Detail.update(J.Constant.subId.space, { id: item.id, details: { spaceOrder: list[i] }}, false);
-				};
-			};
+		U.Data.sortByOrderIdRequest(J.Constant.subId.space, newItems, callBack => {
+			C.SpaceSetOrder(active.id, newItems.map(it => it.id), callBack);
 		});
 
 		analytics.event('ReorderSpace');
@@ -209,7 +193,7 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 			className: 'fixed',
 			classNameWrap: 'fromSidebar',
 			rect: { x: e.pageX, y: e.pageY, width: 0, height: 0 },
-		});
+		}, { route: analytics.route.vault });
 	};
 
 	const items = getItems();
@@ -294,6 +278,16 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 		const cn = [ 'item' ];
 		const icons = [];
 
+		let cnt = null;
+		if (item.counters) {
+			if (item.counters.mentionCounter) {
+				cnt = <Icon className="mention" />;
+			} else 
+			if (item.counters.messageCounter) {
+				cnt = S.Chat.counterString(item.counters.messageCounter);
+			};
+		};
+
 		if (isDragging) {
 			cn.push('isDragging');
 		};
@@ -302,12 +296,7 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 			cn.push('isLoading');
 		};
 
-		if (item.isMuted) {
-			cn.push('isMuted');
-			icons.push('muted');
-		};
-
-		if (item.isPinned) {
+		if (item.isPinned && !cnt) {
 			cn.push('isPinned');
 			icons.push('pin');
 		};
@@ -319,14 +308,8 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 			icons.push('error');
 		};
 
-		let cnt = null;
-		if (item.counters) {
-			if (item.counters.mentionCounter) {
-				cnt = <Icon className="mention" />;
-			} else 
-			if (item.counters.messageCounter) {
-				cnt = S.Chat.counterString(item.counters.messageCounter);
-			};
+		if (!item.lastMessage) {
+			cn.push('noMessages');
 		};
 
 		return (
@@ -347,14 +330,22 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 				</div>
 				<div className="info">
 					<div className="nameWrapper">
-						<ObjectName object={item} />
+						<div className="nameInner">
+							<ObjectName object={item} />
+
+							{item.isMuted ? <Icon className="muted" /> : ''}
+						</div>
+
+						<div className="time">{U.Date.timeAgo(item.lastMessageDate)}</div>
+					</div>
+					<div className="messageWrapper">
+						<Label text={item.lastMessage} />
 
 						<div className="icons">
 							{icons.map(icon => <Icon key={icon} className={icon} />)}
 						</div>
 						{cnt ? <div className="cnt">{cnt}</div> : ''}
 					</div>
-					<Label text={item.lastMessage} />
 				</div>
 			</div>
 		);
@@ -474,7 +465,7 @@ const SidebarPageVaultBase = observer(forwardRef<{}, I.SidebarPageComponent>((pr
 											ref={listRef}
 											width={width}
 											height={height}
-											deferredMeasurmentCache={cache}
+											deferredMeasurementCache={cache}
 											rowCount={items.length}
 											rowHeight={({ index }) => getRowHeight(items[index])}
 											rowRenderer={rowRenderer}

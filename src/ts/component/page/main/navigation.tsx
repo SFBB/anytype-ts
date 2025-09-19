@@ -4,7 +4,7 @@ import raf from 'raf';
 import { observer } from 'mobx-react';
 import { AutoSizer, CellMeasurer, InfiniteLoader, List, CellMeasurerCache } from 'react-virtualized';
 import { Button, Cover, Loader, IconObject, Header, Footer, ObjectName, ObjectDescription } from 'Component';
-import { I, C, S, U, keyboard, focus, translate } from 'Lib';
+import { I, C, S, U, keyboard, focus, translate, sidebar } from 'Lib';
 
 import Item from 'Component/sidebar/page/allObject/item';
 
@@ -157,7 +157,7 @@ const PageMainNavigation = observer(class PageMainNavigation extends React.Compo
 												ref={ref => this.refList[Panel.Left] = ref}
 												width={width}
 												height={height - 35}
-												deferredMeasurmentCache={this.cacheIn}
+												deferredMeasurementCache={this.cacheIn}
 												rowCount={pagesIn.length}
 												rowHeight={HEIGHT}
 												rowRenderer={(param: any) => { 
@@ -196,7 +196,7 @@ const PageMainNavigation = observer(class PageMainNavigation extends React.Compo
 												ref={ref => this.refList[Panel.Right] = ref}
 												width={width}
 												height={height - 35}
-												deferredMeasurmentCache={this.cacheOut}
+												deferredMeasurementCache={this.cacheOut}
 												rowCount={pagesOut.length}
 												rowHeight={HEIGHT}
 												rowRenderer={(param: any) => { 
@@ -221,13 +221,14 @@ const PageMainNavigation = observer(class PageMainNavigation extends React.Compo
 	};
 	
 	componentDidMount () {
+		const { isPopup } = this.props;
 		const rootId = this.getRootId();
 
 		this._isMounted = true;
 		this.loadPage(rootId);
 		this.resize();
 		this.rebind();
-		S.Common.setRightSidebarState(false, '', false);
+		sidebar.rightPanelClose(isPopup);
 
 		focus.clear(true);
 		keyboard.setFocus(true);

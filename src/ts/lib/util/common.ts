@@ -928,6 +928,15 @@ class UtilCommon {
 	};
 
 	/**
+	 * Returns the scroll top position of the scroll container.
+	 * @param {boolean} isPopup - Whether the context is a popup.
+	 * @returns {number} The scroll top position.
+	 */
+	getScrollContainerTop (isPopup: boolean) {
+		return Math.ceil(this.getScrollContainer(isPopup).scrollTop());
+	};
+
+	/**
 	 * Returns the page flex container jQuery object depending on popup state.
 	 * @param {boolean} isPopup - Whether the context is a popup.
 	 * @returns {JQuery<HTMLElement>} The page flex container.
@@ -1671,16 +1680,17 @@ class UtilCommon {
 	 * @param {any} obj - The jQuery object to toggle.
 	 * @param {number} delay - The animation delay in ms.
 	 */
-	toggle (obj: any, delay: number) {
-		const isOpen = obj.hasClass('isOpen');
-
+	toggle (obj: any, delay: number, isOpen: boolean, callBack?: () => void) {
 		if (isOpen) {
 			const height = obj.outerHeight();
 
 			obj.css({ height });
 
 			raf(() => obj.addClass('anim').css({ height: 0 }));
-			window.setTimeout(() => obj.removeClass('isOpen anim'), delay);
+			window.setTimeout(() => {
+				obj.removeClass('isOpen anim');
+				callBack?.();
+			}, delay);
 		} else {
 			obj.css({ height: 'auto' });
 
@@ -1689,7 +1699,10 @@ class UtilCommon {
 			obj.css({ height: 0 }).addClass('anim');
 
 			raf(() => obj.css({ height }));
-			window.setTimeout(() => obj.removeClass('anim').addClass('isOpen').css({ heght: 'auto' }), delay);
+			window.setTimeout(() => {
+				obj.removeClass('anim').addClass('isOpen').css({ height: 'auto' });
+				callBack?.();
+			}, delay);
 		};
 	};
 
@@ -1963,12 +1976,17 @@ class UtilCommon {
 	};
 
 	getMaxScrollHeight (isPopup: boolean): number {
-		const container = this.getScrollContainer(isPopup).get(0);
-		return container.scrollHeight - container.clientHeight;
+		const container = this.getScrollContainer(isPopup);
+		if (!container.length) {
+			return 0;
+		};
+
+		const el = container.get(0);
+		return el.scrollHeight - el.clientHeight;
 	};
 
 	getAppContainerHeight () {
-		return $('#appContainer').height() - Number($('#drag.withButtons').outerHeight() || 0);
+		return $('#appContainer').height() - Number($('#menuBar.withButtons').outerHeight() || 0);
 	};
 
 };

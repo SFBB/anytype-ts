@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useState, useImperativeHandle, useEffect, DragEvent, MouseEvent } from 'react';
+import React, { forwardRef, useRef, useState, useImperativeHandle, useEffect, DragEvent, MouseEvent, memo } from 'react';
 import $ from 'jquery';
 import sha1 from 'sha1';
 import raf from 'raf';
@@ -37,19 +37,18 @@ interface RefProps {
 	getMarks: () => I.Mark[];
 };
 
-const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
+const ChatFormBase = observer(forwardRef<RefProps, Props>((props, ref) => {
 
 	const { account } = S.Auth;
 	const { space } = S.Common;
 	const { 
-		rootId, isPopup, block, subId, readonly, isEmpty, getReplyContent, loadDepsAndReplies, checkMarkOnBackspace, getMessages, 
+		rootId, block, subId, readonly, isEmpty, isPopup, getReplyContent, loadDepsAndReplies, checkMarkOnBackspace, getMessages, 
 		scrollToBottom, scrollToMessage, renderMentions, renderObjects, renderLinks, renderEmoji, onScrollToBottomClick, loadMessagesByOrderId, 
 		highlightMessage,
 	} = props;
 	const [ replyingId, setReplyingId ] = useState<string>('');
 	const [ preloading, setPreloading ] = useState(new Map<string, string>());
 	const nodeRef = useRef(null);
-	const dummyRef = useRef(null);
 	const editableRef = useRef(null);
 	const counterRef = useRef(null);
 	const sendRef = useRef(null);
@@ -70,20 +69,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 	const menuContext = useRef(null);
 
 	let { attachments } = S.Chat;
-
-	const unbind = () => {
-		const events = [ 'resize', 'sidebarResize' ];
-		const ns = block.id + U.Common.getEventNamespace(isPopup);
-
-		$(window).off(events.map(it => `${it}.${ns}`).join(' '));
-	};
-
-	const rebind = () => {
-		const ns = block.id + U.Common.getEventNamespace(isPopup);
-
-		unbind();
-		$(window).on(`resize.${ns} sidebarResize.${ns}`, () => resize());
-	};
 
 	const setAttachments = (list: any[]) => {
 		S.Chat.setAttachments(list);
@@ -118,7 +103,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 					const rect = U.Common.getSelectionRect();
 					return rect ? { ...rect, y: rect.y + win.scrollTop() } : null;
 				},
-				horizontal: I.MenuDirection.Left,
 				offsetY: 4,
 				offsetX: -8,
 				passThrough: true,
@@ -233,7 +217,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		});
 
 		keyboard.shortcut(`shift+enter`, e, () => {
-			resize();
 			scrollToBottom();
 		});
 
@@ -269,7 +252,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		const menuOpenMention = S.Menu.isOpen('blockMention');
 		const canOpenMenuMention = !menuOpenMention && (oneSymbolBefore == '@') && (!twoSymbolBefore || (twoSymbolBefore == ' '));
 
-		resize();
 		setMarks(parsed.marks);
 
 		let adjustMarks = false;
@@ -518,7 +500,7 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		e.stopPropagation();
 
 		window.clearTimeout(timeoutDrag.current);
-		$(nodeRef.current).addClass('isDraggingOver');
+		$(nodeRef.current).addClass('isDraggingOver').css({ height: U.Common.getScrollContainer(isPopup).height() });
 	};
 	
 	const onDragLeave = (e: any) => {
@@ -526,31 +508,33 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		e.stopPropagation();
 
 		window.clearTimeout(timeoutDrag.current);
-		timeoutDrag.current = window.setTimeout(() => {
-			$(nodeRef.current).removeClass('isDraggingOver');
-		}, 100);
+		timeoutDrag.current = window.setTimeout(clearDragState, 100);
 	};
 
 	const onDrop = (e: any) => {
 		if (!canDrop(e)) {
-			onDragLeave(e);
+			clearDragState();
 			return;
 		};
 
 		e.preventDefault();
 		e.stopPropagation();
 
-		const node = $(nodeRef.current);
 		const electron = U.Common.getElectron();
 		const list = Array.from(e.dataTransfer.files).map((it: File) => getObjectFromFile(it)).filter(it => {
 			return !electron.isDirectory(it.path);
 		});
 
-		node.removeClass('isDraggingOver');
 		keyboard.disableCommonDrop(true);
 
 		addAttachments(list);
+
 		keyboard.disableCommonDrop(false);
+		clearDragState();
+	};
+
+	const clearDragState = () => {
+		$(nodeRef.current).removeClass('isDraggingOver').css({ height: '' });
 	};
 
 	const onEmoji = () => {
@@ -614,7 +598,8 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		S.Menu.closeAll(null, () => {
 			S.Menu.open('select', {
 				element: `#block-${block.id} #button-${block.id}-attachment`,
-				className: 'chatAttachment fixed fromBlock',
+				className: 'chatAttachment fixed',
+				classNameWrap: 'fromBlock',
 				offsetY: -8,
 				vertical: I.MenuDirection.Top,
 				noFlipX: true,
@@ -811,7 +796,7 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 					update.content.marks = marks;
 
 					C.ChatEditMessageContent(rootId, editingId.current, update, () => {
-						scrollToMessage(editingId.current, true, true);
+						scrollToMessage(editingId.current, true);
 						clear();
 					});
 				};
@@ -839,8 +824,8 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 					messageType = message.content?.text.length ? 'Mixed' : 'Attachment';
 				};
 
-				C.ChatAddMessage(rootId, message, () => {
-					scrollToBottom();
+				C.ChatAddMessage(rootId, message, (message: any) => {
+					scrollToMessage(message.messageId, true);
 					clear();
 
 					analytics.event('SentMessage', { type: messageType });
@@ -926,6 +911,8 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		onReplyClear();
 		checkSpeedLimit();
 		historyClearState();
+
+		$(window).trigger('resize');
 	};
 
 	const onEditClear = () => {
@@ -953,7 +940,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 
 		setRange(range.current);
 		setReplyingId(message.id);
-		resize();
 
 		analytics.event('ClickMessageMenuReply');
 	};
@@ -1057,10 +1043,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 	const historyClearState = () => {
 		window.clearTimeout(timeoutHistory.current);
 		history.current = { position: -1, states: [] };
-	};
-
-	const getMarksAndRange = (): { marks: I.Mark[], range: I.TextRange } => {
-		return { marks: marks.current, range: range.current };
 	};
 
 	const getTextValue = (): string => {
@@ -1276,10 +1258,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		});
 	};
 
-	const onMenuClose = () => {
-		setRange(range.current);
-	};
-
 	const updateAttachments = (attachments: any[]) => {
 		const list = U.Common.objectCopy(attachments);
 		const ids = list.filter(it => !it.isTmp).map(it => it.id).filter(it => it);
@@ -1461,21 +1439,31 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		});
 	};
 
-	const resize = () => {
-		if (isPopup) {
+	const init = () => {
+		if (readonly) {
 			return;
 		};
 
-		const container = U.Common.getScrollContainer(isPopup);
-		const node = $(nodeRef.current);
-		const dummy = $(dummyRef.current);
-		const cw = container.width();
-		const { isClosed, width } = sidebar.data;
-		const left = isClosed ? 0 : width;
-		const margin = 32;
+		const storage = Storage.getChat(rootId);
 
-		node.css({ width: cw - margin * 2, left: left + margin });
-		dummy.css({ height: node.outerHeight() });
+		if (storage) {
+			const text = String(storage.text || '');
+			const attachments = (storage.attachments || []).filter(it => !it.isTmp);
+			const length = text.length;
+
+			setMarks(storage.marks || []);
+			updateMarkup(text, { from: length, to: length });
+			updateCounter(text);
+
+			if (attachments.length) {
+				setAttachments(attachments);
+			};
+
+			historySaveState();
+			checkSendButton();
+		} else {
+			editableRef.current?.setRange({ from: 0, to: 0 });
+		};
 	};
 
 	let form = null;
@@ -1609,36 +1597,17 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 	};
 
 	useEffect(() => {
-		checkSendButton();
-
-		const storage = Storage.getChat(rootId);
-
-		if (!readonly && storage) {
-			const text = String(storage.text || '');
-			const attachments = (storage.attachments || []).filter(it => !it.isTmp);
-			const length = text.length;
-
-			setMarks(storage.marks || []);
-			updateMarkup(text, { from: length, to: length });
-			updateCounter(text);
-
-			if (attachments.length) {
-				setAttachments(attachments);
-			};
-
-			historySaveState();
-		};
-
-		resize();
-		rebind();
+		init();
 
 		return () => {
-			unbind();
-
 			window.clearTimeout(timeoutFilter.current);
 			keyboard.disableSelection(false);
 		};
 	}, []);
+
+	useEffect(() => {
+		init();
+	}, [ rootId ]);
 
 	useEffect(() => {
 		loadDepsAndReplies([], () => {
@@ -1647,7 +1616,6 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 		});
 
 		checkSendButton();
-		resize();
 		scrollToBottom();
 	});
 
@@ -1671,39 +1639,38 @@ const ChatForm = observer(forwardRef<RefProps, Props>((props, ref) => {
 	}));
 
 	return (
-		<>
-			<div ref={dummyRef} />
-			<div 
-				ref={nodeRef}
-				id="formWrapper" 
-				className="formWrapper"
-				onDragOver={onDragOver}
-				onDragLeave={onDragLeave}
-			>
-				<div className="grad" />
-				<div className="bg" />
+		<div 
+			ref={nodeRef}
+			id="formWrapper" 
+			className="formWrapper"
+			onDragOver={onDragOver}
+			onDragLeave={onDragLeave}
+		>
+			<div className="grad" />
+			<div className="bg" />
 
-				<div className="dragOverlay">
-					<div className="inner">
-						<Icon />
-						<Label text={translate('commonDropFiles')} />
-					</div>
-				</div>
-
+			<div className="dragOverlay">
 				<div className="inner">
-					{!isEmpty ? (
-						<div className="navigation">
-							{mentionCounter ? <Button type={I.ChatReadType.Mention} icon="mention" className="active" cnt={mentionCounter} /> : ''}
-							<Button type={I.ChatReadType.Message} icon="arrow" className={messageCounter ? 'active' : ''} cnt={messageCounter} />
-						</div>
-					) : ''}
-
-					{form}
+					<Icon />
+					<Label text={translate('commonDropFiles')} />
 				</div>
 			</div>
-		</>
+
+			<div className="inner">
+				{!isEmpty ? (
+					<div className="navigation">
+						{mentionCounter ? <Button type={I.ChatReadType.Mention} icon="mention" className="active" cnt={mentionCounter} /> : ''}
+						<Button type={I.ChatReadType.Message} icon="arrow" className={messageCounter ? 'active' : ''} cnt={messageCounter} />
+					</div>
+				) : ''}
+
+				{form}
+			</div>
+		</div>
 	);
 
 }));
+
+const ChatForm = memo(ChatFormBase);
 
 export default ChatForm;

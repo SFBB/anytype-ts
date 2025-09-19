@@ -151,7 +151,7 @@ const SidebarSettingsLibrary = observer(class SidebarSettingsLibrary extends Rea
 												<List
 													width={width}
 													height={height}
-													deferredMeasurmentCache={this.cache}
+													deferredMeasurementCache={this.cache}
 													rowCount={items.length}
 													rowHeight={({ index }) => this.getRowHeight(items[index])}
 													rowRenderer={rowRenderer}
@@ -356,7 +356,7 @@ const SidebarSettingsLibrary = observer(class SidebarSettingsLibrary extends Rea
 		this.searchIds = null;
 		this.load(true);
 
-		analytics.event('SearchInput', { route: analytics.route.allObjects });
+		analytics.event('SearchInput', { route: analytics.route.settings });
 	};
 
 	onMore (e) {

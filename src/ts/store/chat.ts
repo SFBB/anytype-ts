@@ -42,7 +42,11 @@ class ChatStore {
 	 * @param {I.ChatMessage[]} add - The chat messages to prepend.
 	 */
 	prepend (subId: string, add: I.ChatMessage[]): void {
+		const ids = this.getList(subId).map(it => it.id);
+
+		add = (add || []).filter(it => !ids.includes(it.id));
 		add = add.map(it => new M.ChatMessage(it));
+
 		this.getList(subId).unshift(...add);
 	};
 
@@ -52,7 +56,11 @@ class ChatStore {
 	 * @param {I.ChatMessage[]} add - The chat messages to append.
 	 */
 	append (subId: string, add: I.ChatMessage[]): void {
+		const ids = this.getList(subId).map(it => it.id);
+
+		add = (add || []).filter(it => !ids.includes(it.id));
 		add = add.map(it => new M.ChatMessage(it));
+
 		this.getList(subId).push(...add);
 	};
 
@@ -232,6 +240,7 @@ class ChatStore {
 		};
 
 		this.stateMap.set(param.spaceId, spaceMap);
+		this.setBadge();
 	};
 
 	/**
@@ -380,7 +389,6 @@ class ChatStore {
 	 */
 	getSpaceLastMessageDate (spaceId: string): number {
 		const spaceMap = this.stateMap.get(spaceId);
-
 		let ret = 0;
 		if (spaceMap) {
 			for (const [ chatId, state ] of spaceMap) {
@@ -416,15 +424,11 @@ class ChatStore {
 	 * Sets the badge count in the UI based on message counters.
 	 */
 	setBadge () {
-		const { config } = S.Common;
+		const counters = this.getTotalCounters();
 
 		let t = 0;
-
-		if (config.experimental) {
-			const counters = this.getTotalCounters();
-			if (counters) {
-				t = counters.messageCounter;
-			};
+		if (counters) {
+			t = counters.messageCounter;
 		};
 
 		Renderer.send('setBadge', this.counterString(t));
@@ -491,6 +495,19 @@ class ChatStore {
 		};
 
 		return ret.join(': ');
+	};
+
+	/**
+	 * Checks the vault subscription ID for a space and subId.
+	 * @param {string} spaceId - The space ID.
+	 * @param {string} subId - The subscription ID.
+	 * @returns {string} The vault subscription ID.
+	 */
+	checkVaultSubscriptionId (spaceId: string, subId: string): string {
+		if (subId == J.Constant.subId.chatSpace) {
+			subId = this.getSpaceSubId(spaceId);
+		};
+		return subId;
 	};
 
 };

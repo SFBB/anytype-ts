@@ -58,27 +58,38 @@ class UtilSpace {
 	 */
 	getDashboard () {
 		const space = this.getSpaceview();
+		if (space.isChat) {
+			return this.getChat();
+		};
+
 		const id = space.spaceDashboardId;
 
 		if (!id) {
 			return null;
 		};
 
-		if (space.isChat) {
-			return this.getChat();
-		};
-
 		let ret = null;
-		if (id == I.HomePredefinedId.Graph) {
-			ret = this.getGraph();
-		} else
-		if (id == I.HomePredefinedId.Chat) {
-			ret = this.getChat();
-		} else
-		if (id == I.HomePredefinedId.Last) {
-			ret = this.getLastOpened();
-		} else {
-			ret = S.Detail.get(U.Space.getSubSpaceSubId(space.targetSpaceId), id);
+		switch (id) {
+			case I.HomePredefinedId.Graph: {
+				ret = this.getGraph();
+				break;
+			};
+
+			case I.HomePredefinedId.Chat: {
+				ret = this.getChat();
+				break;
+			};
+
+			case I.HomePredefinedId.Last: {
+				ret = this.getLastOpened();
+				break;
+			};
+
+			default: {
+				ret = S.Detail.get(U.Space.getSubSpaceSubId(space.targetSpaceId), id);
+				break;
+			};
+
 		};
 
 		if (!ret || ret._empty_ || ret.isDeleted) {
@@ -357,22 +368,6 @@ class UtilSpace {
 		const length = items.length;
 
 		return length < J.Constant.limit.space.count;
-	};
-
-	/**
-	 * Initializes the space state.
-	 */
-	initSpaceState () {
-		const { widgets } = S.Block;
-		const blocks = S.Block.getChildren(widgets, widgets);
-
-		Storage.initPinnedTypes();
-
-		if (!blocks.length) {
-			return;
-		};
-
-		blocks.forEach(block => Storage.setToggle('widget', block.id, false));
 	};
 
 	/**

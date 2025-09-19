@@ -147,6 +147,7 @@ html.bodyAuthDeleted {
 	.wrapper { transition: opacity 0.5s ease-in-out; }
 	.frame { width: 480px; }
 	.title.fromBackup { margin: 0px 0px 12px 0px; }
+	.title:not(.fromBackup) { @include text-header3; }
 
 	.buttons { margin: 24px 0px 0px 0px; gap: 14px; }
 	.button { min-width: 120px; }
@@ -177,6 +178,18 @@ html.bodyAuthDeleted {
 	.buttons { flex-direction: column; gap: 12px 0px; }
 
 	.tooltipLink:hover { text-decoration: underline; }
+
+	.stagePhrase {
+		.label.description { margin-bottom: 8px; }
+
+		.learnMore { display: flex; align-items: center; gap: 0px 8px; margin-bottom: 32px; }
+		.learnMore {
+			.icon { width: 18px; height: 18px; background-image: url('~img/icon/onboarding/plus.svg'); }
+			.label { @include text-paragraph; font-weight: 500;}
+		}
+
+		.phraseWrapper { background-color: var(--color-shape-tertiary); margin: 0px 0px 32px 0px; }
+	}
 
 	.inputWrapper { margin: 0px 0px 24px 0px; }
 	.inputWrapper {

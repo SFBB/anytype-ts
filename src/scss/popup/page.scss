@@ -49,17 +49,12 @@
 
 		.pageMainHistory { height: 100%; overflow: hidden; }
 		.pageMainHistory {
-			.header { position: absolute; }
+			.header { position: absolute; right: 0px; }
 		}
 
 		.pageMainMedia {
 			.blocks { padding-top: 16px; }
 		}
-
-		.pageMainChat {
-			.formWrapper.isFixed { position: sticky; padding-bottom: 16px; margin-left: -352px; left: 50%; width: 736px; }
-		}
-
 	}	
 }
 

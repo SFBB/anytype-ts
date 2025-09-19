@@ -18,7 +18,10 @@ const SORT_IDS = [
 	'ObjectDetailsAmend', 
 	'ObjectDetailsUnset', 
 	'SubscriptionCounters',
+	'BlockDataviewRelationSet',
+	'BlockDataviewRelationDelete',
 	'BlockDataviewViewSet',
+	'BlockDataviewViewUpdate',
 	'BlockDataviewViewDelete',
 ];
 const SKIP_IDS = [ 'BlockSetCarriage' ];
@@ -267,10 +270,6 @@ class Dispatcher {
 					const { id, childrenIds } = mapped;
 
 					S.Block.updateStructure(rootId, id, childrenIds);
-
-					if (id == rootId) {
-						S.Block.checkBlockType(rootId);
-					};
 
 					updateParents = true;
 					updateNumbers = true;
@@ -845,7 +844,6 @@ class Dispatcher {
 					this.getUniqueSubIds(subIds).forEach(subId => S.Detail.delete(subId, id, keys));
 
 					S.Detail.delete(rootId, id, keys);
-					S.Block.checkBlockType(rootId);
 
 					updateMarkup = true;
 					break;
@@ -865,6 +863,10 @@ class Dispatcher {
 					if (!dep) {
 						S.Record.recordDelete(subId, '', id);
 						S.Detail.delete(subId, id, []);
+
+						if (subId == J.Constant.subId.type) {
+							S.Block.removeTypeWidget(id);
+						};
 					};
 					break;
 				};
@@ -978,9 +980,7 @@ class Dispatcher {
 					};
 
 					mapped.subIds.forEach(subId => {
-						if (subId == J.Constant.subId.chatSpace) {
-							subId = S.Chat.getSpaceSubId(spaceId);
-						};
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
 
 						const list = S.Chat.getList(subId);
 
@@ -1017,7 +1017,10 @@ class Dispatcher {
 				};
 
 				case 'ChatUpdate': {
-					mapped.subIds.forEach(subId => S.Chat.update(subId, mapped.message));
+					mapped.subIds.forEach(subId => {
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
+						S.Chat.update(subId, mapped.message);
+					});
 
 					$(window).trigger('messageUpdate', [ mapped.message, mapped.subIds ]);
 					break;
@@ -1025,36 +1028,39 @@ class Dispatcher {
 
 				case 'ChatStateUpdate': {
 					mapped.subIds.forEach(subId => {
-						if (subId == J.Constant.subId.chatSpace) {
-							subId = S.Chat.getSpaceSubId(spaceId);
-						};
-
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
 						S.Chat.setState(subId, mapped.state, true);
 					});
 					break;
 				};
 
 				case 'ChatUpdateMessageReadStatus': {
-					mapped.subIds.forEach(subId => S.Chat.setReadMessageStatus(subId, mapped.ids, mapped.isRead));
-					break;
+					mapped.subIds.forEach(subId => {
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
+						S.Chat.setReadMessageStatus(subId, mapped.ids, mapped.isRead);
+					});
+					break;	
 				};
 
 				case 'ChatUpdateMentionReadStatus': {
-					mapped.subIds.forEach(subId => S.Chat.setReadMentionStatus(subId, mapped.ids, mapped.isRead));
+					mapped.subIds.forEach(subId => {
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
+						S.Chat.setReadMentionStatus(subId, mapped.ids, mapped.isRead);
+					});
 					break;
 				};
 
 				case 'ChatUpdateMessageSyncStatus': {
-					mapped.subIds.forEach(subId => S.Chat.setSyncStatus(subId, mapped.ids, mapped.isSynced));
+					mapped.subIds.forEach(subId => {
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
+						S.Chat.setSyncStatus(subId, mapped.ids, mapped.isSynced);
+					});
 					break;
 				};
 
 				case 'ChatDelete': {
 					mapped.subIds.forEach(subId => {
-						if (subId == J.Constant.subId.chatSpace) {
-							subId = S.Chat.getSpaceSubId(spaceId);
-						};
-
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
 						S.Chat.delete(subId, mapped.id);
 					});
 					break;
@@ -1062,6 +1068,8 @@ class Dispatcher {
 
 				case 'ChatUpdateReactions': {
 					mapped.subIds.forEach((subId) => {
+						subId = S.Chat.checkVaultSubscriptionId(spaceId, subId);
+
 						const message = S.Chat.getMessageById(subId, mapped.id);
 						if (message) {
 							set(message, { reactions: mapped.reactions });
@@ -1113,13 +1121,6 @@ class Dispatcher {
 					break;
 				};
 
-				case 'SpaceAutoWidgetAdded': {
-					Preview.toastShow({ objectId: mapped.targetId, action: I.ToastAction.Widget, icon: 'check' });
-
-					analytics.createWidget(0, '', analytics.widgetType.auto);
-					break;
-				};
-
 			};
 
 			if (needLog) {
@@ -1153,15 +1154,21 @@ class Dispatcher {
 		const check = [ 'creator', 'spaceDashboardId', 'spaceAccountStatus' ];
 		const intersection = check.filter(k => keys.includes(k));
 
-		if (subIds.length && subIds.includes(J.Constant.subId.space)) {
-			const object = U.Space.getSpaceview(id);
+		if (subIds.length) {
+			if (subIds.includes(J.Constant.subId.space)) {
+				const object = U.Space.getSpaceview(id);
 
-			if (intersection.length && object.targetSpaceId) {
-				U.Subscription.createSubSpace([ object.targetSpaceId ]);
+				if (intersection.length && object.targetSpaceId) {
+					U.Subscription.createSubSpace([ object.targetSpaceId ]);
+				};
+
+				if (object.isAccountDeleted && (object.targetSpaceId == space)) {
+					U.Space.openFirstSpaceOrVoid(null, { replace: true });
+				};
 			};
 
-			if (object.isAccountDeleted && (object.targetSpaceId == space)) {
-				U.Space.openFirstSpaceOrVoid(null, { replace: true });
+			if (subIds.includes(J.Constant.subId.type)) {
+				S.Block.addTypeWidget(id);
 			};
 		};
 
@@ -1181,8 +1188,6 @@ class Dispatcher {
 			if ((undefined !== details.resolvedLayout) && (root.layout != details.resolvedLayout)) {
 				S.Block.update(rootId, rootId, { layout: details.resolvedLayout });
 			};
-
-			S.Block.checkBlockType(rootId);
 		};
 
 		if (undefined !== details.setOf) {
@@ -1271,22 +1276,11 @@ class Dispatcher {
 			return new M.Block(it);
 		});
 
-		// BlockType
-		blocks.push(new M.Block({
-			id: J.Constant.blockId.type,
-			parentId: J.Constant.blockId.header,
-			type: I.BlockType.Type,
-			fields: {},
-			childrenIds: [],
-			content: {}
-		}));
-
 		S.Block.set(contextId, blocks);
 		S.Block.setStructure(contextId, structure);
 		S.Block.updateStructureParents(contextId);
 		S.Block.updateNumbers(contextId); 
 		S.Block.updateMarkup(contextId);
-		S.Block.checkBlockType(contextId);
 
 		keyboard.setWindowTitle();
 	};

@@ -43,16 +43,16 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 
 	render () {
 		const { error, isEditing } = this.state;
-		const { config } = S.Common;
 		const space = U.Space.getSpaceview();
 		const home = U.Space.getDashboard();
 		const type = S.Record.getTypeById(S.Common.type);
 		const buttons = this.getButtons();
+		const profile = U.Space.getProfile();
 		const participant = U.Space.getParticipant();
 		const canWrite = U.Space.canMyParticipantWrite();
-		const isOwner = U.Space.isMyOwner();
+		//const nonChats = U.Space.getList().filter(it => !it.isChat && (it.id != space.id));
+		const canChangeType = canWrite; // && ((!space.isChat && (nonChats.length < profile.sharedSpacesLimit)) || !space.isChat);
 		const members = U.Space.getParticipantsList([ I.ParticipantStatus.Active ]);
-		const widgets = S.Detail.get(S.Block.widgets, S.Block.widgets, [ 'autoWidgetDisabled' ], true);
 		const headerButtons = isEditing ? [
 			{ color: 'blank', text: translate('commonCancel'), onClick: this.onCancel },
 			{ color: 'black', text: translate('commonSave'), onClick: this.onSave, className: 'buttonSave' },
@@ -60,6 +60,8 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 			{ color: 'blank', text: translate('pageSettingsSpaceIndexEdit'), onClick: this.onEdit },
 		];
 		const cnh = [ 'spaceHeader' ];
+		const tooltip = !canChangeType ? U.Common.sprintf(translate('popupSettingsSpaceIndexUxTypeTooltip'), profile.sharedSpacesLimit) : '';
+
 		const spaceModes = [
 			{ id: I.NotificationMode.All },
 			{ id: I.NotificationMode.Mentions },
@@ -156,30 +158,82 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 				<div className="sections">
 					<Error text={error} />
 
-					{space.isShared && config.experimental ? (
-						<>
+					{space.isShared ? (
+						<div className="section sectionSpaceManager">
+							<Label className="sub" text={translate(`popupSettingsSpaceIndexCollaborationTitle`)} />
+							<div className="sectionContent">
 
+								<div className="item">
+									<div className="sides">
+										<Icon className={[ 'push', `push${space.notificationMode}` ].join(' ')} />
+
+										<div className="side left">
+											<Title text={translate('popupSettingsSpaceIndexPushTitle')} />
+											<Label text={translate(`popupSettingsSpaceIndexPushText${space.notificationMode}`)} />
+										</div>
+
+										<div className="side right">
+											<Select
+												id="notificationMode"
+												ref={ref => this.refMode = ref}
+												value={String(space.notificationMode)}
+												options={spaceModes}
+												onChange={v => {
+													C.PushNotificationSetSpaceMode(S.Common.space, Number(v));
+													analytics.event('ChangeMessageNotificationState', { type: v, route: analytics.route.settingsSpaceIndex });
+												}}
+												arrowClassName="black"
+												menuParam={{ horizontal: I.MenuDirection.Right }}
+											/>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					) : ''}
+
+					{canWrite ? (
+						<>
 							<div className="section sectionSpaceManager">
-								<Label className="sub" text={translate(`electronMenuDebug`)} />
+								<Label className="sub" text={translate(`popupSettingsSpaceIndexManageSpaceTitle`)} />
 								<div className="sectionContent">
 
 									<div className="item">
 										<div className="sides">
+											<Icon className="home" />
+
 											<div className="side left">
-												<Title text={translate('popupSettingsSpaceIndexUxTypeTitle')} />
+												<Title text={translate('commonHomepage')} />
+												<Label text={translate('popupSettingsSpaceIndexHomepageDescription')} />
 											</div>
 
 											<div className="side right">
-												<Select
-													id="uxType"
-													readonly={!canWrite}
-													ref={ref => this.refUxType = ref}
-													value={String(space.uxType)}
-													options={spaceUxTypes}
-													onChange={v => this.onSpaceUxType(v)}
-													arrowClassName="black"
-													menuParam={{ horizontal: I.MenuDirection.Right }}
-												/>
+												<div id="empty-dashboard-select" className={[ 'select', (space.isChat ? 'isReadonly' : '') ].join(' ')} onClick={this.onDashboard}>
+													<div className="item">
+														<div className="name">{home ? home.name : translate('commonSelect')}</div>
+													</div>
+													<Icon className="arrow black" />
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div className="item">
+										<div className="sides">
+											<Icon className="type" />
+
+											<div className="side left">
+												<Title text={translate('popupSettingsPersonalDefaultObjectType')} />
+												<Label text={translate('popupSettingsPersonalDefaultObjectTypeDescription')} />
+											</div>
+
+											<div className="side right">
+												<div id="defaultType" className="select" onClick={this.onType}>
+													<div className="item">
+														<div className="name">{type?.name || translate('commonSelect')}</div>
+													</div>
+													<Icon className="arrow black" />
+												</div>
 											</div>
 										</div>
 									</div>
@@ -187,30 +241,27 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 							</div>
 
 							<div className="section sectionSpaceManager">
-								<Label className="sub" text={translate(`popupSettingsSpaceIndexCollaborationTitle`)} />
 								<div className="sectionContent">
-
 									<div className="item">
 										<div className="sides">
-											<Icon className={[ 'push', `push${space.notificationMode}` ].join(' ')} />
+											<Icon className={`settings-ux${space.uxType}`} />
 
 											<div className="side left">
-												<Title text={translate('popupSettingsSpaceIndexPushTitle')} />
-												<Label text={translate(`popupSettingsSpaceIndexPushText${space.notificationMode}`)} />
+												<Title text={translate('popupSettingsSpaceIndexUxTypeTitle')} />
+												<Label text={translate('popupSettingsSpaceIndexUxTypeText')} />
 											</div>
 
 											<div className="side right">
 												<Select
-													id="notificationMode"
-													ref={ref => this.refMode = ref}
-													value={String(space.notificationMode)}
-													options={spaceModes}
-													onChange={v => {
-														C.PushNotificationSetSpaceMode(S.Common.space, Number(v));
-														analytics.event('ChangeMessageNotificationState', { type: v, route: analytics.route.settingsSpaceIndex });
-													}}
+													id="uxType"
+													readonly={!canChangeType}
+													ref={ref => this.refUxType = ref}
+													value={String(space.uxType)}
+													options={spaceUxTypes}
+													onChange={v => this.onSpaceUxType(v)}
 													arrowClassName="black"
 													menuParam={{ horizontal: I.MenuDirection.Right }}
+													tooltipParam={{ text: tooltip }} 
 												/>
 											</div>
 										</div>
@@ -218,79 +269,6 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 								</div>
 							</div>
 						</>
-					) : ''}
-
-					{canWrite ? (
-						<div className="section sectionSpaceManager">
-							<Label className="sub" text={translate(`popupSettingsSpaceIndexManageSpaceTitle`)} />
-							<div className="sectionContent">
-
-								{isOwner ? (
-									<div className="item">
-										<div className="sides">
-											<Icon className="widget" />
-
-											<div className="side left">
-												<Title text={translate('popupSettingsSpaceIndexAutoWidgetsTitle')} />
-												<Label text={translate('popupSettingsSpaceIndexAutoWidgetsText')} />
-											</div>
-
-											<div className="side right">
-												<Switch
-													value={!widgets.autoWidgetDisabled}
-													className="big"
-													onChange={(e: any, v: boolean) => {
-														C.ObjectListSetDetails([ S.Block.widgets ], [ { key: 'autoWidgetDisabled', value: !v } ]);
-
-														analytics.event('AutoCreateTypeWidgetToggle', { type: v ? 'true' : 'false' });
-													}}
-												/>
-											</div>
-										</div>
-									</div>
-								) : ''}
-
-								<div className="item">
-									<div className="sides">
-										<Icon className="home" />
-
-										<div className="side left">
-											<Title text={translate('commonHomepage')} />
-											<Label text={translate('popupSettingsSpaceIndexHomepageDescription')} />
-										</div>
-
-										<div className="side right">
-											<div id="empty-dashboard-select" className={[ 'select', (space.isChat ? 'isReadonly' : '') ].join(' ')} onClick={this.onDashboard}>
-												<div className="item">
-													<div className="name">{home ? home.name : translate('commonSelect')}</div>
-												</div>
-												<Icon className="arrow black" />
-											</div>
-										</div>
-									</div>
-								</div>
-
-								<div className="item">
-									<div className="sides">
-										<Icon className="type" />
-
-										<div className="side left">
-											<Title text={translate('popupSettingsPersonalDefaultObjectType')} />
-											<Label text={translate('popupSettingsPersonalDefaultObjectTypeDescription')} />
-										</div>
-
-										<div className="side right">
-											<div id="defaultType" className="select" onClick={this.onType}>
-												<div className="item">
-													<div className="name">{type?.name || translate('commonSelect')}</div>
-												</div>
-												<Icon className="arrow black" />
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
 					) : (
 						<div className="membersList section">
 							<Label className="sub" text={translate(`pageSettingsSpaceIndexSpaceMembers`)} />
