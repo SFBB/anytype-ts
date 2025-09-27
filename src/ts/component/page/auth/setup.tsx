@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 import { observer } from 'mobx-react';
 import { Frame, Title, Label, Button, Footer, Icon, Loader } from 'Component';
-import { I, S, C, U, J, Storage, translate, Action, Animation, analytics, Renderer, Survey, keyboard } from 'Lib';
+import { I, S, C, U, J, Storage, translate, Action, Animation, analytics, Renderer, Survey, keyboard, Onboarding } from 'Lib';
 
 const PageAuthSetup = observer(forwardRef<{}, I.PageComponent>((props, ref) => {
 
@@ -59,7 +59,7 @@ const PageAuthSetup = observer(forwardRef<{}, I.PageComponent>((props, ref) => {
 				replace: true,
 				onFadeIn: () => {
 					const whatsNew = Storage.get('whatsNew');
-					const primitivesOnboarding = Storage.get('primitivesOnboarding');
+					const chatsOnboarding = Storage.get('chatsOnboarding');
 
 					[
 						I.SurveyType.Register, 
@@ -81,16 +81,24 @@ const PageAuthSetup = observer(forwardRef<{}, I.PageComponent>((props, ref) => {
 					};
 
 					const cb2 = () => {
-						if (!primitivesOnboarding) {
-							S.Popup.open('onboarding', {
+						const whatsNewParam = {
+							onClose: () => {
+								Onboarding.startBasics(isPopup);
+							},
+						};
+
+						if (!chatsOnboarding) {
+							S.Popup.open('introduceChats', {
 								onClose: () => {
-									Storage.set('primitivesOnboarding', true);
-									window.setTimeout(() => U.Common.showWhatsNew(), J.Constant.delay.popup * 2);
+									Storage.set('chatsOnboarding', true);
+									Storage.setHighlight('createSpace', true);
+
+									window.setTimeout(() => U.Common.showWhatsNew(whatsNewParam), J.Constant.delay.popup * 2);
 								},
 							});
 						} else
 						if (whatsNew) {
-							U.Common.showWhatsNew();
+							U.Common.showWhatsNew(whatsNewParam);
 						};
 					};
 

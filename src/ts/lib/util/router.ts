@@ -101,8 +101,6 @@ class UtilRouter {
 		const { replace, animate, delay, onFadeOut, onFadeIn, onRouteChange } = param;
 		const routeParam = this.getParam(route);
 		const { space } = S.Common;
-		const spaceview = U.Space.getSpaceview();
-		const rightSidebar = S.Common.getRightSidebarState(false);
 
 		let timeout = S.Menu.getTimeout();
 		if (!timeout) {
@@ -228,7 +226,7 @@ class UtilRouter {
 					if (spaces.length) {
 						this.switchSpace(spaces[0].targetSpaceId, route, false, routeParam, useFallback);
 					} else {
-						U.Router.go('/main/void', routeParam);
+						U.Router.go('/main/void/error', routeParam);
 					};
 				};
 				return;

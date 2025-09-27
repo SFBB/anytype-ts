@@ -46,7 +46,7 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 	const object = getObject(targetId);
 
 	const getContentParam = (): { layout: I.WidgetLayout, limit: number, viewId: string } => {
-		return U.Data.windgetContentParam(object, block);
+		return U.Data.widgetContentParam(object, block);
 	};
 
 	const param = getContentParam();
@@ -88,19 +88,14 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 	const limit = getLimit();
 	const layout = getLayout();
 	const isFavorite = targetId == J.Constant.widgetId.favorite;
-	const isChat = targetId == J.Constant.widgetId.chat;
+	const isChat = spaceview.isChat && (targetId == J.Constant.widgetId.chat);
 
 	let cnt = 0;
 	let leftCnt = false;
-	let counters = { messageCounter: 0, mentionCounter: 0 };
 
 	if (isFavorite) {
 		cnt = S.Record.getRecords(subId.current).filter(it => !it.isArchived && !it.isDeleted).length;
 		leftCnt = cnt > limit;
-	};
-
-	if (isChat) {
-		counters = S.Chat.getChatCounters(space, spaceview.chatId);
 	};
 
 	const hasChild = ![ I.WidgetLayout.Space ].includes(layout);
@@ -138,13 +133,8 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 		const rootId = getRootId();
 		const view = Dataview.getView(rootId, J.Constant.blockId.dataview, viewId);
 
-		U.Object.openEvent(e, { 
-			...object, 
-			_routeParam_: { 
-				viewId: view?.id,
-				additional: [ { key: 'ref', value: 'widget' } ],
-			} 
-		});
+		S.Common.routeParam = { ref: 'widget', viewId: view?.id };
+		U.Object.openEvent(e, object);
 	};
 
 	const onCreateClick = (e: MouseEvent): void => {
@@ -271,7 +261,7 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 			return;
 		};
 
-		if (spaceview.isChat && isChat) {
+		if (isChat) {
 			return;
 		};
 
@@ -297,6 +287,7 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 				isEditing: true,
 				blockId: block.id,
 				setEditing,
+				isPreview,
 			}
 		});
 	};
@@ -771,13 +762,6 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 							</div>
 						</div>
 						<div className="side right">
-							{counters.messageCounter || counters.mentionCounter ? (
-								<div className="counters">
-									{counters.mentionCounter ? <Icon className="count mention" /> : ''}
-									{counters.messageCounter ? <Icon className="count" inner={counters.messageCounter} /> : ''}
-								</div>
-							) : ''}
-
 							{buttons.length ? (
 								<div className="buttons">
 									{buttons.map(item => (
@@ -867,13 +851,22 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 		rebind();
 		setDummy(dummy + 1);
 
+		const node = $(nodeRef.current);
+
+		node.addClass('anim');
+		window.setTimeout(() => node.addClass('show'), J.Constant.delay.widgetItem);
+
 		return () => {
 			unbind();
 			window.clearTimeout(timeout.current);
 		};
 	}, []);
 
-	useEffect(() => initToggle());
+	useEffect(() => {
+		initToggle();
+
+		$(nodeRef.current).addClass('show');
+	});
 
 	return (
 		<div

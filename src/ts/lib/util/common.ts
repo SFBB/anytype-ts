@@ -1832,8 +1832,12 @@ class UtilCommon {
 	/**
 	 * Shows the "What's New" popup and updates storage.
 	 */
-	showWhatsNew () {
-		S.Popup.open('help', { data: { document: 'whatsNew' } });
+	showWhatsNew (param?: Partial<I.PopupParam>) {
+		param = param || {};
+		param.data = param.data || {};
+		param.data.document = 'whatsNew';	
+
+		S.Popup.open('help', param);
 		Storage.set('whatsNew', false);
 	};
 
@@ -1905,7 +1909,7 @@ class UtilCommon {
 	 * @param {string} v - The version to check against.
 	 */
 	checkUpdateVersion (v: string) {
-		if (!Storage.get('primitivesOnboarding')) {
+		if (!Storage.get('chatsOnboarding')) {
 			return;
 		};
 
