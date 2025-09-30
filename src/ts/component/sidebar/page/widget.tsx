@@ -51,21 +51,27 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 
 	render (): React.ReactNode {
 		const { isEditing, previewId, sectionIds } = this.state;
+		const { space } = S.Common;
 		const { widgets } = S.Block;
 		const { sidebarDirection } = this.props;
 		const cnsh = [ 'subHead' ];
 		const cnb = [ 'body' ];
-		const space = U.Space.getSpaceview();
+		const spaceview = U.Space.getSpaceview();
 		const canWrite = U.Space.canMyParticipantWrite();
 		const counters = S.Chat.getTotalCounters();
 		const cnt = S.Chat.counterString(counters.messageCounter);
 		const isDirectionLeft = sidebarDirection == I.SidebarDirection.Left;
 		const isDirectionRight = sidebarDirection == I.SidebarDirection.Right;
 		const members = U.Space.getParticipantsList([ I.ParticipantStatus.Active ]);
-		const isMuted = space.notificationMode != I.NotificationMode.All;
+		const isMuted = spaceview.notificationMode != I.NotificationMode.All;
+
+		// Subscriptions
+		for (const key of U.Subscription.fileTypeKeys()) {
+			const { total } = S.Record.getMeta(U.Subscription.typeCheckSubId(key), '');
+		};
 
 		let headerButtons: any[] = [];
-		if (space.isChat) {
+		if (spaceview.isChat) {
 			headerButtons = headerButtons.concat([
 				{ id: 'chat', name: translate('commonChat') },
 				{ id: 'mute', name: isMuted ? translate('commonUnmute') : translate('commonMute'), className: isMuted ? 'off' : 'on' },
@@ -151,6 +157,7 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 		} else {
 			const blockWidgets = this.getBlockWidgets();
 			const spaceBlock = new M.Block({ id: 'space', type: I.BlockType.Widget, content: { layout: I.WidgetLayout.Space } });
+			const chatBlock = blockWidgets.find(it => it.id == J.Constant.widgetId.chat);
 			const sections = [
 				{ id: I.WidgetSection.Pin, name: translate('widgetSectionPinned') },
 				{ id: I.WidgetSection.Type, name: translate('widgetSectionType') },
@@ -160,7 +167,7 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 				first = blockWidgets[0];
 			};
 
-			subHead = !space.isChat ? (
+			subHead = !spaceview.isChat ? (
 				<div className={cnsh.join(' ')}>
 					{isDirectionLeft || cnt ? (
 						<div className="side left" onClick={isDirectionLeft ? this.onBack : null}>
@@ -173,8 +180,8 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 						className="side center" 
 						onClick={() => U.Object.openRoute({ id: 'spaceIndex', layout: I.ObjectLayout.Settings })}
 					>
-						<IconObject object={space} size={20} iconSize={20} canEdit={false} />
-						<ObjectName object={space} />
+						<IconObject object={spaceview} size={20} iconSize={20} canEdit={false} />
+						<ObjectName object={spaceview} />
 					</div>
 
 					<div className="side right">
@@ -190,7 +197,7 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 
 			content = (
 				<div className="content">
-					{space && !space._empty_ ? (
+					{spaceview && !spaceview._empty_ ? (
 						<DropTarget 
 							{...this.props} 
 							isTargetTop={true}
@@ -208,9 +215,9 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 											id="spaceIcon"
 											size={80}
 											iconSize={80}
-											object={{ ...space, spaceId: S.Common.space }}
+											object={{ ...spaceview, spaceId: S.Common.space }}
 										/>
-										<ObjectName object={{ ...space, spaceId: S.Common.space }} />
+										<ObjectName object={{ ...spaceview, spaceId: S.Common.space }} />
 										{members.length > 1 ? <Label className="membersCounter" text={`${members.length} ${U.Common.plural(members.length, translate('pluralMember'))}`} /> : ''}
 									</div>
 									<div className="buttons">
@@ -237,6 +244,18 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 								/>
 							)}
 						</DropTarget>
+					) : ''}
+
+					{chatBlock ? (
+						<Widget
+							block={chatBlock}
+							disableContextMenu={true}
+							isEditing={false}
+							canEdit={false}
+							canRemove={false}
+							sidebarDirection={sidebarDirection}
+							getObject={id => this.getObject(chatBlock, id)}
+						/>
 					) : ''}
 
 					{sections.map(section => {
@@ -300,7 +319,7 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 												key={`widget-${block.id}`}
 												block={block}
 												isEditing={isEditing}
-												canEdit={true}
+												canEdit={block.id != J.Constant.widgetId.bin}
 												canRemove={isSectionPin}
 												onDragStart={this.onDragStart}
 												onDragOver={this.onDragOver}
@@ -336,7 +355,7 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 						<div className="side center" />
 
 						<div className="side right">
-							{!space.isChat ? (
+							{!spaceview.isChat ? (
 								<Button 
 									id="button-help"
 									className="help"
@@ -354,7 +373,7 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 		return (
 			<>
 				<div id="head" className="head">
-					{space.isChat ? (
+					{spaceview.isChat ? (
 						<>
 							<div className="side left">
 								<Icon className="search withBackground" onClick={() => keyboard.onSearchPopup(analytics.route.widget)} />
@@ -920,11 +939,11 @@ const SidebarPageWidget = observer(class SidebarPageWidget extends React.Compone
 
 			const target = child.getTargetObjectId();
 
-			if ([ J.Constant.widgetId.allObject, J.Constant.widgetId.chat ].includes(target)) {
+			if ([ J.Constant.widgetId.allObject ].includes(target)) {
 				return false;
 			};
 
-			if ([ J.Constant.widgetId.bin ].includes(target) && (block.content.section == I.WidgetSection.Pin)) {
+			if ([ J.Constant.widgetId.bin, J.Constant.widgetId.chat ].includes(target) && (block.content.section == I.WidgetSection.Pin)) {
 				return false;
 			};
 

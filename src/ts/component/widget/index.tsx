@@ -30,7 +30,7 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 	const timeout = useRef(0);
 	const spaceview = U.Space.getSpaceview();
 	const { block, isPreview, isEditing, className, canEdit, canRemove, getObject, setEditing, onDragStart, onDragOver, onDrag, setPreview } = props;
-	const { root, widgets } = S.Block;
+	const { widgets } = S.Block;
 
 	const getChild = (): I.Block => {
 		const childrenIds = S.Block.getChildrenIds(widgets, block.id);
@@ -87,23 +87,18 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 
 	const limit = getLimit();
 	const layout = getLayout();
-	const isFavorite = targetId == J.Constant.widgetId.favorite;
-	const isChat = spaceview.isChat && (targetId == J.Constant.widgetId.chat);
-
-	let cnt = 0;
-	let leftCnt = false;
-
-	if (isFavorite) {
-		cnt = S.Record.getRecords(subId.current).filter(it => !it.isArchived && !it.isDeleted).length;
-		leftCnt = cnt > limit;
-	};
-
+	const isChat = targetId == J.Constant.widgetId.chat;
 	const hasChild = ![ I.WidgetLayout.Space ].includes(layout);
 	const canWrite = U.Space.canMyParticipantWrite();
 	const cn = [ 'widget' ];
 	const withSelect = !isSystemTarget && (!isPreview || !U.Common.isPlatformMac());
 	const childKey = `widget-${child?.id}-${layout}`;
 	const canDrop = object && !isSystemTarget && !isEditing && S.Block.isAllowed(object.restrictions, [ I.RestrictionObject.Block ]);
+
+	let counters = { messageCounter: 0, mentionCounter: 0 };
+	if (isChat) {
+		counters = S.Chat.getChatCounters(space, spaceview.chatId);
+	};
 
 	const unbind = () => {
 		const events = [ 'updateWidgetData', 'updateWidgetViews' ];
@@ -253,19 +248,7 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 		e.preventDefault();
 		e.stopPropagation();
 
-		if (!U.Space.canMyParticipantWrite()) {
-			return;
-		};
-
-		if (!object || object._empty_) {
-			return;
-		};
-
-		if (isChat) {
-			return;
-		};
-
-		if (isBin) {
+		if (!U.Space.canMyParticipantWrite() || !object || object._empty_ || !canEdit) {
 			return;
 		};
 
@@ -450,28 +433,6 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 				callBack();
 			};
 		});
-	};
-
-	const sortFavorite = (records: string[]): string[] => {
-		const ids = S.Block.getChildren(root, root, it => it.isLink()).
-			map(it => it.getTargetObjectId()).
-			map(id => S.Detail.get(root, id)).
-			filter(it => !it.isArchived && !it.isDeleted).map(it => it.id);
-
-		let sorted = U.Common.objectCopy(records || []).sort((c1: string, c2: string) => {
-			const i1 = ids.indexOf(c1);
-			const i2 = ids.indexOf(c2);
-
-			if (i1 > i2) return 1;
-			if (i1 < i2) return -1;
-			return 0;
-		});
-
-		if (!isPreview) {
-			sorted = sorted.slice(0, getLimit());
-		};
-
-		return sorted;
 	};
 
 	const onSetPreview = () => {
@@ -688,7 +649,6 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 		getData,
 		getLimit,
 		getTraceId,
-		sortFavorite,
 		addGroupLabels,
 		checkShowAllButton,
 		onContext,
@@ -758,10 +718,15 @@ const WidgetIndex = observer(forwardRef<{}, Props>((props, ref) => {
 								{collapse}
 								{icon}
 								<ObjectName object={object} withPlural={true} />
-								{leftCnt ? <span className="count">{cnt}</span> : ''}
 							</div>
 						</div>
 						<div className="side right">
+							{counters.messageCounter || counters.mentionCounter ? (
+								<div className="counters">
+									{counters.mentionCounter ? <Icon className="count mention" /> : ''}
+									{counters.messageCounter ? <Icon className="count" inner={counters.messageCounter} /> : ''}
+								</div>
+							) : ''}
 							{buttons.length ? (
 								<div className="buttons">
 									{buttons.map(item => (

@@ -255,15 +255,14 @@ const PageMainSettingsSpaceShare = observer(class PageMainSettingsSpaceShare ext
 	};
 
 	isSharedSpacesLimit () {
-		const mySharedSpaces = U.Space.getMySharedSpacesList().filter(it => !it.isChat);
+		const mySharedSpaces = U.Space.getMySharedSpacesList();
 		const { sharedSpacesLimit } = U.Space.getProfile();
 
 		return sharedSpacesLimit && (mySharedSpaces.length >= sharedSpacesLimit);
 	};
 
 	getOptionById (id: I.InviteLinkType) {
-		const space = U.Space.getSpaceview();
-		const isWriterLimit = !space.isChat && (U.Space.getWriterLimit() <= 0);
+		const isWriterLimit = U.Space.getWriterLimit() <= 0;
 		const isDisabled = (id == I.InviteLinkType.Editor) && isWriterLimit;
 		const suffix = I.InviteLinkType[id];
 

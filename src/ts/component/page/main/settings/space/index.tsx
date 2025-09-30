@@ -236,7 +236,6 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 								</div>
 							</div>
 
-							{/*
 							<div className="section sectionSpaceManager">
 								<div className="sectionContent">
 									<div className="item">
@@ -251,21 +250,19 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 											<div className="side right">
 												<Select
 													id="uxType"
-													readonly={!canChangeType}
+													readonly={!canWrite}
 													ref={ref => this.refUxType = ref}
 													value={String(space.uxType)}
 													options={spaceUxTypes}
 													onChange={v => this.onSpaceUxType(v)}
 													arrowClassName="black"
 													menuParam={{ horizontal: I.MenuDirection.Right }}
-													tooltipParam={{ text: tooltip }} 
 												/>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
-							*/}
 						</>
 					) : (
 						<div className="membersList section">
@@ -432,15 +429,26 @@ const PageMainSettingsSpaceIndex = observer(class PageMainSettingsSpaceIndex ext
 	};
 
 	onSpaceUxType (v) {
-		v = Number(v);
+		S.Popup.open('confirm', {
+			data: {
+				icon: 'warning-red',
+				title: translate('popupConfirmUxTypeChangeTitle'),
+				text: translate('popupConfirmUxTypeChangeText'),
+				textConfirm: translate('popupConfirmUxTypeChangeConfirm'),
+				colorConfirm: 'red',
+				onConfirm: () => {
+					v = Number(v);
 
-		const details: any = {
-			spaceUxType: v,
-			spaceDashboardId: (v == I.SpaceUxType.Chat ? I.HomePredefinedId.Chat : I.HomePredefinedId.Last),
-		};
+					const details: any = {
+						spaceUxType: v,
+						spaceDashboardId: (v == I.SpaceUxType.Chat ? I.HomePredefinedId.Chat : I.HomePredefinedId.Last),
+					};
 
-		C.WorkspaceSetInfo(S.Common.space, details);
-		analytics.event('ChangeSpaceUxType', { type: v, route: analytics.route.settingsSpaceIndex });
+					C.WorkspaceSetInfo(S.Common.space, details);
+					analytics.event('ChangeSpaceUxType', { type: v, route: analytics.route.settingsSpaceIndex });
+				}
+			},
+		});
 	};
 
 	checkName (v: string): string {
