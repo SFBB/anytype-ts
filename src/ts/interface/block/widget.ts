@@ -3,6 +3,7 @@ import { I } from 'Lib';
 export enum WidgetSection {
 	Pin			 = 0,
 	Type		 = 1,
+	Button		 = 2,
 };
 
 export enum WidgetLayout { 
@@ -18,7 +19,6 @@ export enum WidgetLayout {
 export interface WidgetComponent {
 	parent?: I.Block;
 	block?: I.Block;
-	isEditing?: boolean;
 	isPreview?: boolean;
 	canCreate?: boolean;
 	canEdit?: boolean;
@@ -26,7 +26,6 @@ export interface WidgetComponent {
 	isSystemTarget?: boolean;
 	sidebarDirection?: I.SidebarDirection;
 	setPreview?: (id: string) => void;
-	setEditing?: (v: boolean) => void;
 	getData?: (subId: string, callBack?: () => void) => void;
 	getLimit?: () => number;
 	getTraceId?: () => string;

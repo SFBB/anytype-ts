@@ -254,13 +254,6 @@ const PageMainSettingsSpaceShare = observer(class PageMainSettingsSpaceShare ext
 		analytics.event('ScreenShareMenu');
 	};
 
-	isSharedSpacesLimit () {
-		const mySharedSpaces = U.Space.getMySharedSpacesList();
-		const { sharedSpacesLimit } = U.Space.getProfile();
-
-		return sharedSpacesLimit && (mySharedSpaces.length >= sharedSpacesLimit);
-	};
-
 	getOptionById (id: I.InviteLinkType) {
 		const isWriterLimit = U.Space.getWriterLimit() <= 0;
 		const isDisabled = (id == I.InviteLinkType.Editor) && isWriterLimit;
@@ -283,7 +276,7 @@ const PageMainSettingsSpaceShare = observer(class PageMainSettingsSpaceShare ext
 		};
 
 		U.Common.copyToast('', U.Space.getInviteLink(cid, key), translate('toastInviteCopy'));
-		analytics.event('ClickShareSpaceCopyLink');
+		analytics.event('ClickShareSpaceCopyLink', { route: analytics.route.settingsSpaceShare });
 	};
 
 	onMoreLink () {
@@ -325,11 +318,12 @@ const PageMainSettingsSpaceShare = observer(class PageMainSettingsSpaceShare ext
 	};
 
 	canEdit () {
-		const { cid, key } = this.state;
-		const hasLink = cid && key;
 		const space = U.Space.getSpaceview();
+		const mySharedSpaces = U.Space.getMySharedSpacesList();
+		const { sharedSpacesLimit } = U.Space.getProfile();
+		const limitReached = sharedSpacesLimit && (mySharedSpaces.length >= sharedSpacesLimit);
 
-		return U.Space.isMyOwner() && (!hasLink || space.isShared);
+		return U.Space.isMyOwner() && (!limitReached || space.isShared);
 	};
 
 });

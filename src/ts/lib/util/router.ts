@@ -109,16 +109,17 @@ class UtilRouter {
 
 		S.Menu.closeAll();
 		S.Popup.closeAll();
+		sidebar.rightPanelClose(false);
+
 		focus.clear(true);
 
-		if (routeParam.spaceId && ![ space ].includes(routeParam.spaceId)) {
+		if (routeParam.spaceId && (routeParam.spaceId != space)) {
 			this.switchSpace(routeParam.spaceId, route, false, param, false);
 			return;
 		};
 
 		const change = () => {
 			this.history.push(route); 
-			this.checkSidebarState();
 
 			if (onRouteChange) {
 				onRouteChange();
@@ -241,35 +242,37 @@ class UtilRouter {
 
 					analytics.removeContext();
 					S.Common.nullifySpaceKeys();
+					S.Common.setLeftSidebarState('vault', 'widget');
+
+					U.Data.onInfo(message.info);
+
+					const onStartingIdCheck = () => {
+						U.Data.onAuth({ route, routeParam: { ...routeParam, onRouteChange, animate: false } }, () => {
+							this.isOpening = false;
+						});
+					};
 
 					const onRouteChange = () => {
-						sidebar.leftPanelSetState({ page: U.Space.getDefaultSidebarPage() });
-
-						this.checkSidebarState();
 						routeParam.onRouteChange?.();
 					};
 
-					U.Data.onInfo(message.info);
-					U.Data.onAuth({ route, routeParam: { ...routeParam, onRouteChange, animate: false } }, () => {
-						this.isOpening = false;
-					});
+					const startingId = S.Auth.startingId.get(id);
+
+					if (startingId) {
+						U.Object.getById(startingId, {}, (object: any) => {
+							if (object) {
+								route = '/' + U.Object.route(object);
+							};
+							onStartingIdCheck();
+						});
+
+						S.Auth.startingId.delete(id);
+					} else {
+						onStartingIdCheck();
+					};
 				},
 			});
 		});
-	};
-
-	checkSidebarState () {
-		const spaceview = U.Space.getSpaceview();
-		const rightSidebar = S.Common.getRightSidebarState(false);
-
-		if (!spaceview.isChat && (rightSidebar.page == 'widget')) {
-			sidebar.rightPanelClose(false);
-		} else 
-		if (spaceview.isChat && (rightSidebar.page != 'widget')) {
-			sidebar.rightPanelClose(false);
-		} else {
-			sidebar.rightPanelRestore(false);
-		};
 	};
 
 	/**

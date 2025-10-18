@@ -6,7 +6,7 @@ import { AutoSizer, CellMeasurer, InfiniteLoader, List, CellMeasurerCache } from
 import { Button, Cover, Loader, IconObject, Header, Footer, ObjectName, ObjectDescription } from 'Component';
 import { I, C, S, U, keyboard, focus, translate, sidebar } from 'Lib';
 
-import Item from 'Component/sidebar/page/allObject/item';
+import Item from 'Component/page/main/navigation/item';
 
 interface State {
 	loading: boolean;
@@ -228,7 +228,6 @@ const PageMainNavigation = observer(class PageMainNavigation extends React.Compo
 		this.loadPage(rootId);
 		this.resize();
 		this.rebind();
-		sidebar.rightPanelClose(isPopup);
 
 		focus.clear(true);
 		keyboard.setFocus(true);

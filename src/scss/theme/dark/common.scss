@@ -19,6 +19,7 @@ html.themeDark {
 	--color-shape-highlight-dark: rgba(255, 255, 255, 0.11);
 	--color-shape-highlight-medium: rgba(255, 255, 255, 0.05);
 	--color-shape-highlight-light: rgba(255, 255, 255, 0.03);
+	--color-shape-highlight-light-solid: #1e1e1e;
 
 	/* Control */
 
@@ -389,7 +390,7 @@ html.themeDark {
 		.icon.back { background-image: url('#{$themePath}/icon/widget/back0.svg'); }
 		.icon.back:hover { background-image: url('#{$themePath}/icon/widget/back1.svg'); }
 
-		> .sidebarPage {
+		.sidebarPage {
 			> .subHead {
 				.icon.back:hover { background-image: url('#{$themePath}/icon/widget/back1.svg'); }
 				.icon.create { background-image: url('#{$themePath}/icon/widget/button/create.svg'); }
@@ -413,25 +414,7 @@ html.themeDark {
 			}
 		}
 		
-		> .sidebarPage.pageAllObject {
-			> .inner {
-				> .head {
-					.titleWrap {
-						.icon.back { background-image: url('#{$themePath}/icon/widget/back0.svg'); }
-						.icon.more { background-image: url('#{$themePath}/icon/menu/action/more0.svg'); }
-						.icon.more:hover { background-image: url('#{$themePath}/icon/menu/action/more1.svg'); }
-					}
-					.tabs {
-						.swiper-button-prev, .swiper-button-next {
-							&::before { background-image: url('#{$themePath}/arrow/sidebarObjectTab0.svg'); }
-							&:hover::before { background-image: url('#{$themePath}/arrow/sidebarObjectTab1.svg'); }
-						}
-					}
-				}
-			}
-		}
-
-		> .containerSettings {
+		.containerSettings {
 			> .body {
 				.list {
 					> .head {
@@ -452,7 +435,7 @@ html.themeDark {
 			}
 		}
 
-		> .sidebarPage.pageWidget {
+		.sidebarPage.pageWidget {
 			> .bottom {
 				.icon.settings:hover { background-image: url('#{$themePath}/icon/widget/button/widgetSettings1.svg'); }
 			}
@@ -487,7 +470,7 @@ html.themeDark {
 			}
 		}
 
-		> .sidebarPage.pageVault {
+		.sidebarPage.pageVault {
 			.item {
 				.cnt { color: var(--color-text-primary); }
 			}

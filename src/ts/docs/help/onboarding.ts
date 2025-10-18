@@ -12,10 +12,12 @@ const Data = {
 		],
 
 		param: {
-			element: '#button-help',
+			recalcRect: () => {
+				const { ww, wh } = U.Common.getWindowDimensions();
+				return { x: 0, y: 0, width: ww, height: wh };
+			},
 			classNameWrap: 'fixed fromSidebar',
 			className: 'isWizard',
-			vertical: I.MenuDirection.Top,
 			horizontal: I.MenuDirection.Right,
 			noArrow: true,
 			passThrough: true,
@@ -158,8 +160,7 @@ const Data = {
 				param: {
 					element: '#menuSyncStatus',
 					horizontal: I.MenuDirection.Right,
-					stickToElementEdge: I.MenuDirection.None,
-					highlightElements: [ '#menuSyncStatus', '#sidebarRightButton' ],
+					highlightElements: [ '#menuSyncStatus' ],
 					offsetY: 14,
 				}
 			},

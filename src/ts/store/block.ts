@@ -932,12 +932,10 @@ class BlockStore {
 			J.Constant.typeKey.relation,
 			J.Constant.typeKey.spaceview,
 			J.Constant.typeKey.space,
-			J.Constant.typeKey.chat,
-			J.Constant.typeKey.chatDerived,
 		].includes(key);
 	};
 
-	createWidget (id: string) {
+	createWidget (id: string, section: I.WidgetSection) {
 		if (!id) {
 			return;
 		};
@@ -950,7 +948,7 @@ class BlockStore {
 			childrenIds: [],
 			content: {
 				layout: I.WidgetLayout.Link,
-				section: I.WidgetSection.Type,
+				section,
 			},
 		});
 
@@ -988,7 +986,7 @@ class BlockStore {
 			return;
 		};
 
-		this.createWidget(type.id);
+		this.createWidget(type.id, I.WidgetSection.Type);
 		element.childrenIds.push(id);
 
 		this.updateStructure(widgets, widgets, element.childrenIds);
@@ -1020,33 +1018,27 @@ class BlockStore {
 
 		element = U.Common.objectCopy(element);
 
-		const childrenIds = element.childrenIds || [];
+		let childrenIds = element.childrenIds || [];
 
 		types.forEach(type => {
-			if (childrenIds.includes(type.id)) {
-				return;
-			};
-
 			if (U.Subscription.fileTypeKeys().includes(type.uniqueKey)) {
 				const { total } = S.Record.getMeta(U.Subscription.typeCheckSubId(type.uniqueKey), '');
 
 				if (!total) {
+					childrenIds = childrenIds.filter(it => it != type.id);
 					return;
 				};
 			};
 
-			this.createWidget(type.id);
-			childrenIds.push(type.id);
+			if (!childrenIds.includes(type.id)) {
+				this.createWidget(type.id, I.WidgetSection.Type);
+				childrenIds.push(type.id);
+			};
 		});
 
 		if (!childrenIds.includes(J.Constant.widgetId.bin)) {
-			this.createWidget(J.Constant.widgetId.bin);
+			this.createWidget(J.Constant.widgetId.bin, I.WidgetSection.Type);
 			childrenIds.push(J.Constant.widgetId.bin);
-		};
-
-		if (!spaceview.isChat && spaceview.chatId && !childrenIds.includes(J.Constant.widgetId.chat)) {
-			this.createWidget(J.Constant.widgetId.chat);
-			childrenIds.push(J.Constant.widgetId.chat);
 		};
 
 		this.updateStructure(widgets, widgets, childrenIds);
